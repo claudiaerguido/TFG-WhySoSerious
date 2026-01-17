@@ -2,10 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-from nlp import SentimentHFModel
-
-# Instanciamos el modelo globalmente (se cargará el pipeline una vez, singleton)
-nlp_engine = SentimentHFModel()
+import nlp_model  # Importamos nuestro "cerebro" del Bloque A
 
 # Creamos la aplicación FastAPI
 app = FastAPI()
@@ -28,9 +25,11 @@ class TextRequest(BaseModel):
 def health_check():
     return {"status": "ok"}
 
-# 2. Endpoint para predecir (usa nlp_engine)
+# 2. Endpoint para predecir (usa nlp_model)
 @app.post("/predict")
 def predict_text(request: TextRequest):
-    # Llamamos a la función predict del nuevo motor NLP
-    resultado = nlp_engine.predict(request.text)
+    # Llamamos a la función predict que creamos en el Bloque A
+    resultado = nlp_model.predict(request.text)
     return resultado
+
+
