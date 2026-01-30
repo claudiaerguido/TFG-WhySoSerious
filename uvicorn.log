@@ -1,0 +1,38 @@
+INFO:     Will watch for changes in these directories: ['/Users/vicente-erguido-benitez-kit-digital/Documents/informatica/4 carrera/TFG/tfg-final2/ceu-whysoserious']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [4254] using StatReload
+/Users/vicente-erguido-benitez-kit-digital/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Device set to use cpu
+The tokenizer you are loading from './models/final_teams' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:     Started server process [4367]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+Cargando modelo Fase B (Teams) con AutoModel...
+Modelo Fase B cargado correctamente (Logits enabled).
+INFO:     127.0.0.1:50923 - "OPTIONS /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50923 - "OPTIONS /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50924 - "OPTIONS /predict HTTP/1.1" 200 OK
+Thresholds loaded: {'TRISTEZA': 0.25, 'ESTRES_ANSIEDAD': 0.25, 'ENFADO_IRRITACION': 0.3, 'SOBRECARGA_URGENCIA': 0.35, 'CANSANCIO_FATIGA': 0.25, 'POSITIVO_ALIVIO': 0.4, 'NEUTRO': 0.65}
+INFO:     127.0.0.1:50923 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50925 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50924 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50984 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50990 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50990 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50990 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51035 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51035 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51035 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51038 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51038 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51038 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51054 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51054 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51054 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51062 - "OPTIONS /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51062 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51062 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51063 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51083 - "POST /predict HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51090 - "POST /predict HTTP/1.1" 200 OK

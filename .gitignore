@@ -6,3 +6,8 @@ node_modules/
 dist/
 .vscode/
 .idea/
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth

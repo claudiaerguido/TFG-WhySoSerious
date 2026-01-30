@@ -4,3 +4,8 @@ pydantic
 transformers
 torch
 datasets
+msal
+requests
+python-dotenv
+beautifulsoup4
+itsdangerous

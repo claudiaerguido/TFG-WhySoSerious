@@ -1,0 +1,112 @@
+1) Crea el “dataset Teams de entrenamiento” (aunque sea pequeño al principio)
+
+Ahora mismo tienes teams_es_eval_25.csv. Eso sirve para testear, pero para entrenar Fase B necesitas train/val/test.
+
+Paso 1.1 — Duplica tu CSV y crea splits
+
+Crea 3 archivos:
+
+data/teams_train.csv (70%)
+
+data/teams_val.csv (15%)
+
+data/teams_test.csv (15%)
+
+Con 25 ejemplos quedará pequeño, pero te permite montar el pipeline YA.
+
+Si prefieres, en vez de 3 archivos puedes añadir una columna split (train/val/test). Pero 3 archivos es más simple.
+
+Paso 1.2 — Mantén el formato
+
+Columnas mínimas:
+
+text
+
+tus 7 etiquetas 0/1
+
+(opcional) INCERTO, INTENSIDAD
+
+Y recuerda:
+
+NEUTRO exclusivo (si hay emoción, NEUTRO=0)
+
+✅ Resultado de este paso: ya puedes entrenar aunque sea “modo prueba”.
+
+2) Monta el script de entrenamiento Fase B (train_teams.py)
+
+Este es el verdadero comienzo técnico de Fase B.
+
+Qué hará:
+
+Cargar el modelo base de Fase A: ./models/final_xed
+
+Cambiar la salida a 7 etiquetas
+
+Entrenar con data/teams_train.csv
+
+Validar con data/teams_val.csv
+
+Guardar el modelo final: ./models/final_teams
+
+✅ Resultado: un modelo “final_teams” aunque al principio sea flojo (por pocos datos), pero el pipeline queda funcionando.
+
+3) Haz un “entrenamiento seco” (para comprobar que todo funciona)
+
+Ejecuta con:
+
+1 epoch
+
+batch pequeño
+
+y comprueba que:
+
+guarda models/final_teams/
+
+puedes cargarlo en backend sin romper nada
+
+✅ Resultado: Fase B ya está técnicamente en marcha.
+
+4) Ahora sí: ampliar dataset a 300 (la parte larga)
+
+Una vez tengas el pipeline funcionando, lo siguiente es escalar datos:
+
+Meta hoy: llegar a 100 ejemplos
+
+Meta esta semana: 300–600
+
+Y enfoca ejemplos en lo que Fase A fallaba o no cubría:
+
+NEUTRO de Teams real: ok/recibido/gracias/lo miro/vale
+
+ESTRES universitario: nervioso/ansiedad/no paro de pensar/taquicardia
+
+Sarcasmo: “Genial…” etiquetado como ENFADO
+
+SOBRECARGA y CANSANCIO (las nuevas)
+
+✅ Resultado: el modelo empieza a aprender lo que te importa.id,text,prediction,ground_truth,match
+1,"Ok, lo reviso ahora y te digo algo en un rato.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 1}",False
+2,¿A qué hora quedamos para la reunión del grupo de hoy?,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 1}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 1}",True
+3,"Recibido, gracias. Subo el documento a Teams en 5 minutos.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 1}",False
+4,He actualizado la diapositiva 6 con el gráfico. Echadle un ojo cuando podáis.,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 1}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 1}",True
+5,"No llego a la entrega de mañana, tengo tres prácticas y un parcial esta semana.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
+6,Me faltan un montón de cosas y quedan dos horas para subirlo… esto es una locura.,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
+7,"Tengo la reunión en 10 min y aún no he terminado el informe, voy corriendo.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
+8,"Estoy muy nervioso con la presentación, no paro de darle vueltas desde ayer.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 1, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+9,Cada vez que abro Teams me entra ansiedad pensando en todo lo que falta.,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 1, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+10,"Estoy con el corazón a mil por el examen, me tiembla todo y no me concentro.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 1, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+11,"Llevo durmiendo fatal toda la semana, hoy no me da la cabeza para nada.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
+12,"Estoy reventado, se me cierran los ojos y aún me queda por terminar la práctica.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
+13,"No proceso nada, necesito desconectar y dormir, llevo demasiados días así.","{""TRISTEZA"": 1, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+14,"Hoy estoy bastante hundido, siento que por mucho que haga no avanzo.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 1, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+15,"Me he quedado sin ganas de nada, estoy desanimado y me cuesta hasta empezar.","{""TRISTEZA"": 1, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 1, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
+16,Siento que no encajo en el grupo y me estoy quedando solo con todo.,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 1, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+17,"Genial, otra vez han cambiado los requisitos a última hora… qué maravilla.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 1, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+18,¡Es increíble que avisen de la entrega la noche antes! Esto no hay quien lo aguante.,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 1, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 1, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
+19,Estoy harto de que nadie responda y al final me coma yo todo el trabajo.,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 1, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+20,"¡Por fin ha pasado los tests! Qué alivio, pensaba que no lo sacábamos.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 1, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}",False
+21,"Buen trabajo equipo, la presentación ha salido genial. Me quedo mucho más tranquilo.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}",True
+22,"Gracias de verdad por la ayuda, me habéis salvado y ahora ya respiro.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 1, ""NEUTRO"": 0}",True
+23,Estoy agobiado porque no llego al plazo y encima no puedo dejar de pensar en ello.,"{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 1, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+24,"No puedo más: estoy agotado y me da miedo suspender, siento que voy a petar.","{""TRISTEZA"": 0, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 0, ""ESTRES"": 1, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",False
+25,"Estoy triste y cansado, me cuesta incluso abrir el portátil para empezar.","{""TRISTEZA"": 1, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}","{""TRISTEZA"": 1, ""ESTRES"": 0, ""ENFADO"": 0, ""POSITIVO"": 0, ""NEUTRO"": 0}",True
