@@ -24,7 +24,7 @@ app = FastAPI()
 # y se pasen "cookies" (credenciales) entre ellos.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], 
+    allow_origins=["http://localhost:5173", "http://localhost:5174"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -110,8 +110,8 @@ def analyze_chat(request: Request, chat_id: str):
         text = m["text"]
         if len(text.strip()) < 3: continue # Ignoramos "ok", "si", etc.
         
-        # 2. Análisis con IA (Temperatura 1.5 para ser más creativo/sensible)
-        prediction = nlp_model.final_predict(text, temperature=1.5)
+        # 2. Análisis con IA
+        prediction = nlp_model.final_predict(text)
         labels = prediction["labels"]
         
         # 3. Detectar Riesgos (Si la probabilidad > 40%)

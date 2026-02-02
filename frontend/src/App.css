@@ -224,3 +224,51 @@ select {
   padding: 15px;
   border-radius: 8px;
 }
+
+/* =========================================
+   PREMIUM UI (BARRAS DE PROGRESO)
+   ========================================= */
+
+.progress-container {
+  width: 100%;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  height: 20px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  text-align: right;
+  padding-right: 5px;
+  color: white;
+  font-size: 0.8rem;
+  line-height: 20px;
+  transition: width 0.5s ease;
+  white-space: nowrap;
+}
+
+.bar-high {
+  background-color: #dc3545;
+}
+
+/* Rojo */
+.bar-med {
+  background-color: #ffc107;
+  color: #333;
+}
+
+/* Amarillo */
+.bar-low {
+  background-color: #28a745;
+}
+
+/* Verde */
+.bar-neutral {
+  background-color: #6c757d;
+}
+
+/* Gris */

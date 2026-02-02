@@ -15,7 +15,7 @@ BASE_MODEL_PATH = "nlptown/bert-base-multilingual-uncased-sentiment"
 # Directorio de salida para el modelo fine-tuneado
 OUTPUT_DIR = "./models/final_teams"
 
-# Datasets de entrada (Generados previamente por make_splits_manual.py)
+# Datasets de entrada 
 TRAIN_CSV = "../data/teams_train_manual.csv" 
 VAL_CSV = "../data/teams_val_manual.csv"     
 
@@ -39,9 +39,9 @@ def main():
     try:
         df_train = pd.read_csv(TRAIN_CSV)
         df_val = pd.read_csv(VAL_CSV)
-        print(f"✅ Datos cargados. Train: {len(df_train)}, Val: {len(df_val)}")
+        print(f"Datos cargados. Train: {len(df_train)}, Val: {len(df_val)}")
     except Exception as e:
-        print(f"❌ Error cargando datasets: {e}")
+        print(f"Error cargando datasets: {e}")
         return
 
     # Función para transformar el DataFrame en un Dataset compatible con Hugging Face
@@ -95,6 +95,7 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(
         BASE_MODEL_PATH,
         num_labels=len(TARGET_LABELS),
+        ignore_mismatched_sizes=True,
         problem_type="multi_label_classification",
         id2label={i: l for i, l in enumerate(TARGET_LABELS)},
         label2id={l: i for i, l in enumerate(TARGET_LABELS)}
@@ -108,8 +109,9 @@ def main():
         num_train_epochs=15,            # Número de épocas
         learning_rate=5e-5,             # Tasa de aprendizaje
         per_device_train_batch_size=4,  # Tamaño del batch
-        evaluation_strategy="epoch",    # Evaluar al final de cada época
+        eval_strategy="epoch",    # Evaluar al final de cada época
         save_strategy="epoch",          # Guardar checkpoint al final de cada época
+        save_total_limit=1,             # GUARDAR SOLO EL ULTIMO CHECKPOINT (Evita llenar disco)
         load_best_model_at_end=True,    # Recuperar el mejor modelo al finalizar
         metric_for_best_model="f1_micro" # Métrica de optimización
     )

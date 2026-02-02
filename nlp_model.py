@@ -15,7 +15,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/final_teams")
 # Archivo de configuración de umbrales dinámicos
 THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "thresholds_phaseB.json")
-
+    
 # Etiquetas del modelo
 LABELS = [
     "TRISTEZA", 
@@ -125,11 +125,30 @@ class NLPModel:
 # Instancia global del modelo (Singleton implícito)
 nlp_service = NLPModel()
 
-# --- API Pública para Scripts Externos ---
+# --- API Pública para Scripts Externos y Compatibilidad con main.py ---
 
 def final_predict(text):
     """
     Función envoltorio (Wrapper) utilizada por main.py y evaluate_goldset.py.
-    Garantiza una interfaz estable para la predicción.
     """
     return nlp_service.predict(text)
+
+def baseline_predict(text):
+    """
+    Implementación de compatibilidad para 'Baseline'.
+    Utiliza el mismo modelo pero devuelve el formato simplificado {label, score}
+    del sentimiento dominante.
+    """
+    res = final_predict(text)
+    # Encontramos la emoción con mayor probabilidad
+    labels_dict = res["labels"]
+    best_label = max(labels_dict, key=labels_dict.get)
+    best_score = labels_dict[best_label]
+    
+    return {
+        "label": best_label,
+        "score": best_score
+    }
+
+# Variable de compatibilidad para que main.py detecte si el modelo cargó
+_model = nlp_service.model

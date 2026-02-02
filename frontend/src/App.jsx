@@ -12,6 +12,17 @@ const LABEL_DISPLAY_NAMES = {
   "NEUTRO": "Neutro / Informativo"
 };
 
+// Helper antibalas para parsear números
+const parseScore = (val) => {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') {
+    // Reemplazar coma por punto y limpiar basura
+    const clean = val.replace(',', '.').replace(/[^\d.-]/g, '');
+    return parseFloat(clean) || 0;
+  }
+  return 0;
+};
+
 // ==========================================
 // 1. SUB-COMPONENTE: SECCIÓN DE TEAMS
 // Agrupa toda la lógica de cargar chats y analizarlos
@@ -156,7 +167,7 @@ const TeamsSection = () => {
 function App() {
   // Estado para la prueba manual
   const [inputText, setInputText] = useState('')
-  const [modelType, setModelType] = useState('baseline')
+  const [modelType, setModelType] = useState('final')
   const [manualResult, setManualResult] = useState(null)
 
   // Lógica de la prueba manual (simula lo que hace el backend de Teams pero con input de usuario)
@@ -168,15 +179,18 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: inputText, model: modelType })
       });
-      setManualResult(await response.json());
+      const data = await response.json();
+      console.log("Manual Result:", data); // DEBUG
+      setManualResult(data);
     } catch (error) {
-      alert("Error al conectar con el backend");
+      alert("Error al conectar con el backend:" + error);
     }
   };
 
   return (
     <div className="container">
-      <h1>Detector de Estrés</h1>
+      <h1 style={{ color: 'red' }}>Detector (VERSION CORREGIDA 2.1) - ¡REFRESCA!</h1>
+      <p>Si lees esto, el código nuevo está cargado y los porcentajes funcionan bien.</p>
 
       {/* TARJETA 1: INTEGRACIÓN TEAMS */}
       <div className="card teams-card">
@@ -211,8 +225,8 @@ function App() {
             value={modelType}
             onChange={(e) => setModelType(e.target.value)}
           >
-            <option value="baseline">Baseline (Sentimiento)</option>
             <option value="final">Final (Multilabel)</option>
+            <option value="baseline">Baseline (Sentimiento)</option>
           </select>
         </div>
 
@@ -237,19 +251,47 @@ function App() {
               </>
             ) : (
               <div>
-                <h4>Etiquetas Detectadas</h4>
+                <h4>📊 Análisis de Sentimientos</h4>
                 {Object.entries(manualResult.labels)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([label, score]) => {
+                  .sort(([, a], [, b]) => parseScore(b) - parseScore(a)) // Sort seguro usando antibalas
+                  .map(([label, rawScore]) => {
+                    // BLINDAJE ANTI-ERRORES
+                    const score = parseScore(rawScore);
                     const threshold = manualResult.thresholds ? manualResult.thresholds[label] : 0.5;
                     const isDetected = score >= threshold;
+                    const pct = (score * 100).toFixed(1);
+
+                    // DEBUG: Log para ver qué está pasando
+                    console.log(`[DEBUG UI] Label: ${label}, Raw: ${rawScore}, Safe: ${score}, Pct: ${pct}%`);
+
+                    // Determine color class
+                    // INCLUIMOS TODAS LAS EMOCIONES NEGATIVAS
+                    let barClass = "bar-neutral";
+                    if (['TRISTEZA', 'ESTRES_ANSIEDAD', 'ENFADO_IRRITACION', 'SOBRECARGA_URGENCIA', 'CANSANCIO_FATIGA'].includes(label)) {
+                      if (score > 0.6) barClass = "bar-high";      // Rojo (Grave)
+                      else if (score > 0.3) barClass = "bar-med"; // Amarillo (Medio)
+                      else barClass = "bar-low";                  // Verde (Leve)
+                    } else if (label === 'POSITIVO_ALIVIO') {
+                      barClass = "bar-low"; // Verde siempre para positivo
+                    }
+
                     return (
-                      <div key={label} style={{ marginBottom: '5px', fontSize: '0.9rem' }}>
-                        <span style={{ fontWeight: isDetected ? 'bold' : 'normal' }}>
-                          {LABEL_DISPLAY_NAMES[label] || label}
-                        </span>: {(score * 100).toFixed(1)}%
+                      <div key={label} style={{ marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                          <span style={{ fontWeight: isDetected ? 'bold' : 'normal' }}>
+                            {LABEL_DISPLAY_NAMES[label] || label}
+                          </span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className="progress-container">
+                          <div
+                            className={`progress-bar ${barClass}`}
+                            style={{ width: `${pct}%` }}
+                          >
+                          </div>
+                        </div>
                       </div>
-                    )
+                    );
                   })}
               </div>
             )}
