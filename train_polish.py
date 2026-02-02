@@ -103,14 +103,15 @@ def main():
     args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         overwrite_output_dir=True,
-        evaluation_strategy="epoch",
+        eval_strategy="epoch",
         save_strategy="epoch", 
         load_best_model_at_end=True,
         metric_for_best_model="f1_micro",
         learning_rate=2e-5,      # LR reducido para estabilidad
         per_device_train_batch_size=8,
         num_train_epochs=5,      # Ciclo corto
-        logging_steps=10
+        logging_steps=10,
+        save_total_limit=1       # Limitar checkpoints para ahorrar espacio
     )
 
     # Misma métrica F1
