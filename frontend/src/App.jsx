@@ -189,8 +189,12 @@ function App() {
 
   return (
     <div className="container">
-      <h1 style={{ color: 'red' }}>Detector (VERSION CORREGIDA 2.1) - ¡REFRESCA!</h1>
-      <p>Si lees esto, el código nuevo está cargado y los porcentajes funcionan bien.</p>
+      <h1 style={{ color: '#0078d4', fontSize: '2.5rem', marginBottom: '10px' }}>
+        Observatorio de Salud Mental - TFG
+      </h1>
+      <p style={{ color: '#666', marginBottom: '30px' }}>
+        Análisis de sentimientos y detección de riesgos en el entorno laboral.
+      </p>
 
       {/* TARJETA 1: INTEGRACIÓN TEAMS */}
       <div className="card teams-card">
@@ -245,10 +249,17 @@ function App() {
         {manualResult && (
           <div className="result-box">
             {manualResult.model === 'baseline' ? (
-              <>
-                <p><strong>Resultado:</strong> {manualResult.sentiment_label}</p>
-                <p><strong>Confianza:</strong> {(manualResult.confidence * 100).toFixed(2)}%</p>
-              </>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <p style={{ fontSize: '1.1rem', marginBottom: '10px' }}>
+                  Resultado: <strong>{manualResult.sentiment_label}</strong>
+                </p>
+                <div style={{ fontSize: '2rem', color: '#ffc107', marginBottom: '10px' }}>
+                  {"★".repeat(manualResult.stars || 0)}{"☆".repeat(5 - (manualResult.stars || 0))}
+                </div>
+                <p style={{ color: '#666', fontSize: '0.9rem' }}>
+                  Confianza: {(manualResult.confidence * 100).toFixed(1)}%
+                </p>
+              </div>
             ) : (
               <div>
                 <h4>📊 Análisis de Sentimientos</h4>

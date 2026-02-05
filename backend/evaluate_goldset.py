@@ -12,7 +12,7 @@ import json
 
 # Dataset "Gold Standard": Conjunto de datos etiquetado y verificado manualmente por humanos.
 # Se utiliza como referencia absoluta (Ground Truth) para medir el rendimiento del modelo.
-GOLD_CSV = "../data/teams_goldset_120.csv"
+GOLD_CSV = "../../data/teams_goldset_120.csv"
 RESULTS_DIR = "results"
 ERRORS_CSV = os.path.join(RESULTS_DIR, "gold_errors.csv")
 SUMMARY_MD = os.path.join(RESULTS_DIR, "gold_summary.md")

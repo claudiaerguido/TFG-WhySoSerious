@@ -5,9 +5,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel
 from typing import Literal
 
-# Importamos nuestro cerebro (NLP) y nuestro traductor de Teams (auth_graph)
+# Importamos nuestro cerebro (NLP) y nuestro traductor de Teams (auth_graph_web)
 import nlp_model
-from auth_graph import (
+from auth_graph_web import (
     build_auth_url, 
     exchange_code_for_token, 
     list_my_chats, 
@@ -153,7 +153,12 @@ async def predict(request: TextRequest):
     """Endpoint manual (el que usas en la tarjeta de abajo)."""
     if request.model == "baseline":
         res = nlp_model.baseline_predict(request.text)
-        return {"model": "baseline", "sentiment_label": res["label"], "confidence": res["score"]}
+        return {
+            "model": "baseline", 
+            "sentiment_label": res["label"], 
+            "confidence": res["score"],
+            "stars": res.get("stars", 0)
+        }
 
     # Fallback si el modelo no cargó bien
     if nlp_model._model is None:

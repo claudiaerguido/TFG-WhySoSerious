@@ -16,8 +16,8 @@ BASE_MODEL_PATH = "nlptown/bert-base-multilingual-uncased-sentiment"
 OUTPUT_DIR = "./models/final_teams"
 
 # Datasets de entrada 
-TRAIN_CSV = "../data/teams_train_manual.csv" 
-VAL_CSV = "../data/teams_val_manual.csv"     
+TRAIN_CSV = "../../data/teams_train_manual.csv" 
+VAL_CSV = "../../data/teams_val_manual.csv"     
 
 # Etiquetas objetivo para la clasificación multilabel
 TARGET_LABELS = [
