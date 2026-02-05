@@ -51,3 +51,50 @@ The tokenizer you are loading from '/Users/vicente-erguido-benitez-kit-digital/D
 INFO:     Started server process [13753]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'analyze_org_messages.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13753]
+/Users/vicente-erguido-benitez-kit-digital/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+WARNING:  StatReload detected changes in 'analyze_org_messages.py'. Reloading...
+The tokenizer you are loading from '/Users/vicente-erguido-benitez-kit-digital/Documents/informatica/4 carrera/TFG/tfg-final2/ceu-whysoserious/backend/models/final_teams' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:     Started server process [15860]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/vicente-erguido-benitez-kit-digital/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+The tokenizer you are loading from '/Users/vicente-erguido-benitez-kit-digital/Documents/informatica/4 carrera/TFG/tfg-final2/ceu-whysoserious/backend/models/final_teams' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:     Started server process [15865]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'db_supabase.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [15865]
+/Users/vicente-erguido-benitez-kit-digital/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+The tokenizer you are loading from '/Users/vicente-erguido-benitez-kit-digital/Documents/informatica/4 carrera/TFG/tfg-final2/ceu-whysoserious/backend/models/final_teams' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:     Started server process [16707]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'analyze_org_messages.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16707]
+/Users/vicente-erguido-benitez-kit-digital/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+WARNING:  StatReload detected changes in 'analyze_org_messages.py'. Reloading...
+The tokenizer you are loading from '/Users/vicente-erguido-benitez-kit-digital/Documents/informatica/4 carrera/TFG/tfg-final2/ceu-whysoserious/backend/models/final_teams' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:     Started server process [16961]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+/Users/vicente-erguido-benitez-kit-digital/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+The tokenizer you are loading from '/Users/vicente-erguido-benitez-kit-digital/Documents/informatica/4 carrera/TFG/tfg-final2/ceu-whysoserious/backend/models/final_teams' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:     Started server process [16969]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.

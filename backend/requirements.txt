@@ -9,3 +9,5 @@ requests
 python-dotenv
 beautifulsoup4
 itsdangerous
+psycopg2-binary
+supabase
