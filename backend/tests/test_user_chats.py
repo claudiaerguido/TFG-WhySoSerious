@@ -1,3 +1,5 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from auth_graph_app import list_users, list_user_chats, list_chat_messages
 
 users = list_users()

@@ -128,6 +128,7 @@ def list_chat_messages(chat_id: str, top: int = 20) -> List[Dict]:
             "id": m.get("id"),
             "text": text,
             "from": sender_name,
+            "raw_from": sender, # Added this for filtering in scheduler_tasks.py
             "createdDateTime": m.get("createdDateTime"),
         })
 

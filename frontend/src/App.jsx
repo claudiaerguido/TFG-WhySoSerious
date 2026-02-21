@@ -162,7 +162,109 @@ const TeamsSection = () => {
 };
 
 // ==========================================
-// 2. COMPONENTE PRINCIPAL (LA PÁGINA)
+// 2. COMPONENTE NUEVO: INDICADOR DE EQUIPO (US11)
+// ==========================================
+const TeamRiskDashboard = () => {
+  const [teamRisk, setTeamRisk] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [teamIdInput, setTeamIdInput] = useState("1"); // Por defecto consultamos el equipo 1
+
+  const fetchTeamRisk = async () => {
+    if (!teamIdInput) return;
+    setLoading(true);
+    try {
+      const parsedTeamId = Number(teamIdInput);
+      const url = `http://localhost:8000/api/team/risk?team_id=${parsedTeamId}`;
+      console.log(`[FRONTEND] 🚀 Llamando a Backend: ${url}`);
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      console.log(`[FRONTEND] 📦 Respuesta recibida para team_id ${parsedTeamId}:`, data);
+      setTeamRisk(data);
+    } catch (e) {
+      alert("Error cargando riesgo del equipo: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para determinar el color del semáforo/tarjeta
+  const getRiskColor = (level) => {
+    if (level === "Verde") return "#d4edda"; // Verde claro
+    if (level === "Amarillo") return "#fff3cd"; // Amarillo claro
+    if (level === "Rojo") return "#f8d7da"; // Rojo claro
+    return "#f8f9fa"; // Gris por defecto
+  };
+
+  const getRiskTextColor = (level) => {
+    if (level === "Verde") return "#155724";
+    if (level === "Amarillo") return "#856404";
+    if (level === "Rojo") return "#721c24";
+    return "#333";
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: "20px" }} translate="no">
+      <h2>📊 Panel del Mánager (Métricas de Equipo)</h2>
+
+      <div className="teams-controls" style={{ marginBottom: "15px", display: "flex", gap: "10px", alignItems: "center" }}>
+        <label>ID del Equipo:</label>
+        <input
+          type="number"
+          value={teamIdInput}
+          onChange={(e) => setTeamIdInput(e.target.value)}
+          style={{ width: "60px", padding: "5px" }}
+        />
+        <button onClick={fetchTeamRisk} disabled={loading} className="btn-analyze">
+          {loading ? "Calculando..." : "Analizar Equipo"}
+        </button>
+      </div>
+
+      {teamRisk && teamRisk.status === "ok" && (
+        <div
+          style={{
+            marginTop: "15px",
+            padding: "20px",
+            borderRadius: "10px",
+            backgroundColor: getRiskColor(teamRisk.risk_level),
+            color: getRiskTextColor(teamRisk.risk_level),
+            textAlign: "center",
+            border: `2px solid ${getRiskTextColor(teamRisk.risk_level)}`
+          }}
+        >
+          {teamRisk.sample_size === 0 ? (
+            <p>No hay datos o el equipo está vacío.</p>
+          ) : (
+            <>
+              <h3 style={{ margin: "0 0 10px 0", fontSize: "1.5rem" }}>
+                Riesgo General: {teamRisk.risk_level}
+              </h3>
+              <div style={{ fontSize: "3rem", fontWeight: "bold", margin: "10px 0" }}>
+                {teamRisk.risk_score_percentage}%
+              </div>
+              <p style={{ margin: 0, fontSize: "0.9rem" }}>
+                Basado en mensajes de {teamRisk.sample_size} usuarios en 7 días.
+              </p>
+              <div style={{ marginTop: "10px", fontSize: "0.8rem", opacity: 0.8 }}>
+                (0% = Relajado | 100% = Burnout Grave)
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {teamRisk && teamRisk.error && (
+        <div style={{ color: "red", marginTop: "10px" }}>
+          Error: {teamRisk.error}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// 3. COMPONENTE PRINCIPAL (LA PÁGINA)
 // ==========================================
 function App() {
   // Estado para la prueba manual
@@ -174,7 +276,7 @@ function App() {
   const handleManualPredict = async () => {
     if (!inputText) return;
     try {
-      const response = await fetch('http://127.0.0.1:8000/predict', {
+      const response = await fetch('http://localhost:8000/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: inputText, model: modelType })
@@ -195,6 +297,9 @@ function App() {
       <p style={{ color: '#666', marginBottom: '30px' }}>
         Análisis de sentimientos y detección de riesgos en el entorno laboral.
       </p>
+
+      {/* TARJETA 0: DASHBOARD DEL MANAGER (NUEVA US11) */}
+      <TeamRiskDashboard />
 
       {/* TARJETA 1: INTEGRACIÓN TEAMS */}
       <div className="card teams-card">

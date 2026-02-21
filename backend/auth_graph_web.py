@@ -58,7 +58,6 @@ def list_my_chats(token):
     for c in resp.json().get("value", []):
         topic = c.get("topic")
         if not topic:
-            # Try to get participant name for 1:1 chats
             topic = "Chat sin título" 
         
         chat_id = c["id"]
