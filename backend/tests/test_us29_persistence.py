@@ -12,9 +12,9 @@ def test_persistence():
     
     print(f"Guardando métrica falsa para {email}...")
     try:
-        save_risk_metrics(email, now, scores)
+        save_risk_metrics(email, now, scores, message_id="TEST_MSG_ID_12345")
     except Exception as e:
-        print(f"❌ ERROR interno al guardar: {e}")
+        print(f"ERROR interno al guardar: {e}")
         return
     
     print("Verificando si existe en base de datos...")
@@ -22,15 +22,15 @@ def test_persistence():
     try:
         res = client.table("risk_metrics").select("*").eq("user_email", email).order("created_at", desc=True).limit(1).execute()
         if res.data:
-            print("✅ ÉXITO: El dato se guardó y pudo ser recuperado desde Supabase de forma persistente.")
+            print("ÉXITO: El dato se guardó y pudo ser recuperado desde Supabase de forma persistente.")
             print("   Dato recuperado:", res.data[0])
             # Limpiar
             client.table("risk_metrics").delete().eq("user_email", email).execute()
-            print("🧹 Dato de prueba limpiado correctamente de la BD.")
+            print("Dato de prueba limpiado correctamente de la BD.")
         else:
-            print("❌ ERROR: No se encontró el dato guardado en Supabase.")
+            print("ERROR: No se encontró el dato guardado en Supabase.")
     except Exception as e:
-         print(f"❌ ERROR al leer de la base de datos: {e}")
+         print(f"ERROR al leer de la base de datos: {e}")
 
 if __name__ == "__main__":
     test_persistence()

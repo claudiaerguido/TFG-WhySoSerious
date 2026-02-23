@@ -9,9 +9,9 @@ def test_background_processing():
     print("Esta prueba ejecuta el flujo completo de Graph API + NLP de manera desatendida.")
     try:
         run_nightly_analysis()
-        print("\n✅ ÉXITO: El análisis en segundo plano se ejecutó correctamente sin intervenir en los hilos principales.")
+        print("\n ÉXITO: El análisis en segundo plano se ejecutó correctamente sin intervenir en los hilos principales.")
     except Exception as e:
-        print(f"\n❌ ERROR: Fallo al ejecutar el análisis asíncrono/en background: {e}")
+        print(f"\n ERROR: Fallo al ejecutar el análisis asíncrono/en background: {e}")
 
 if __name__ == "__main__":
     test_background_processing()
