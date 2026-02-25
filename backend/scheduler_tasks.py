@@ -65,7 +65,7 @@ def run_nightly_analysis():
                     save_risk_metrics(
                         user_email=user_email,
                         timestamp=created,
-                        scores=analysis["labels"],   # debe incluir TRISTEZA y resto
+                        scores=analysis["labels"],  
                         message_id=message_id,
                     )
                 except Exception as e:
