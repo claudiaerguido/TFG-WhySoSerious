@@ -101,38 +101,49 @@ def list_user_chats(user_id: str) -> List[Dict]:
     data = graph_get(f"/users/{user_id}/chats")
     return data.get("value", [])
 
-def list_chat_messages(chat_id: str, top: int = 20) -> List[Dict]:
+def list_chat_messages(chat_id: str, top: int = 50) -> List[Dict]:
     """
-    Lista mensajes de un chat concreto.
+    Lista mensajes de un chat concreto con paginación.
     Requiere permiso: ChatMessage.Read.All
     """
-    data = graph_get(
-        f"/chats/{chat_id}/messages",
-        params={"$top": top}
-    )
+    all_messages = []
+    skip = 0
 
-    messages = []
-    for m in data.get("value", []):
-        body_html = m.get("body", {}).get("content", "")
-        text = html_to_text(body_html)
+    while True:
+        data = graph_get(
+            f"/chats/{chat_id}/messages",
+            params={"$top": top, "$skip": skip}
+        )
+        
+        batch = data.get("value", [])
+        
+        for m in batch:
+            body_html = m.get("body", {}).get("content", "")
+            text = html_to_text(body_html)
 
-        sender = m.get("from")
-        if sender:
-            user_info = sender.get("user") or {}
-            app_info = sender.get("application") or {}
-            sender_name = user_info.get("displayName") or app_info.get("displayName") or "Desconocido"
-        else:
-            sender_name = "Sistema / Evento"
+            sender = m.get("from")
+            if sender:
+                user_info = sender.get("user") or {}
+                app_info = sender.get("application") or {}
+                sender_name = user_info.get("displayName") or app_info.get("displayName") or "Desconocido"
+            else:
+                sender_name = "Sistema / Evento"
 
-        messages.append({
-            "id": m.get("id"),
-            "text": text,
-            "from": sender_name,
-            "raw_from": sender, # Added this for filtering in scheduler_tasks.py
-            "createdDateTime": m.get("createdDateTime"),
-        })
+            all_messages.append({
+                "id": m.get("id"),
+                "text": text,
+                "from": sender_name,
+                "raw_from": sender, # Added this for filtering in scheduler_tasks.py
+                "createdDateTime": m.get("createdDateTime"),
+            })
 
-    return messages
+        # Criterio de parada de paginación
+        if len(batch) < top:
+            break
+            
+        skip += top
+
+    return all_messages
 
 # ==========================================
 # 6. FUNCIÓN DE ALTO NIVEL (OPCIONAL)

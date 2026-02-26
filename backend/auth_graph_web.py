@@ -102,27 +102,41 @@ def list_my_chats(token):
     return chats
 
 
-def list_chat_messages(token, chat_id, top=20):
+def list_chat_messages(token, chat_id, top=50):
     headers = {"Authorization": f"Bearer {token}"}
-    resp = requests.get(f"{GRAPH_BASE}/chats/{chat_id}/messages?$top={top}", headers=headers)
-    if not resp.ok:
-        return []
-
     msgs = []
-    for m in resp.json().get("value", []):
-        if m.get("messageType") != "message":
-            continue
-        body_content = m.get("body", {}).get("content", "")
-        text = html_to_text(body_content)
-        sender = m.get("from")
-        if sender:
-            user_info = sender.get("user") or {}
-            sender_name = user_info.get("displayName", "Desconocido")
-        else:
-            sender_name = "Sistema"
-        msgs.append({
-            "text": text,
-            "from": sender_name,
-            "createdDateTime": m["createdDateTime"],
-        })
+    skip = 0
+
+    while True:
+        resp = requests.get(
+            f"{GRAPH_BASE}/chats/{chat_id}/messages?$top={top}&$skip={skip}", 
+            headers=headers
+        )
+        if not resp.ok:
+            break
+
+        batch = resp.json().get("value", [])
+        
+        for m in batch:
+            if m.get("messageType") != "message":
+                continue
+            body_content = m.get("body", {}).get("content", "")
+            text = html_to_text(body_content)
+            sender = m.get("from")
+            if sender:
+                user_info = sender.get("user") or {}
+                sender_name = user_info.get("displayName", "Desconocido")
+            else:
+                sender_name = "Sistema"
+            msgs.append({
+                "text": text,
+                "from": sender_name,
+                "createdDateTime": m["createdDateTime"],
+            })
+            
+        if len(batch) < top:
+            break
+            
+        skip += top
+
     return msgs
