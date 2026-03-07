@@ -56,84 +56,70 @@ export default function RiskCard({ riskLevel, riskScore, sampleSize, prevScore =
 
     return (
         <Box sx={{
-            borderRadius: 2,
+            borderRadius: 3,
             p: 3,
-            background: cfg.bg,
-            border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.05)",
             display: "flex",
-            gap: 2.5,
-            alignItems: "flex-start",
+            flexDirection: "column",
+            gap: 2,
         }}>
-            {/* Barra lateral de color semáforo */}
-            <Box sx={{
-                width: 4,
-                minHeight: 80,
-                borderRadius: 4,
-                bgcolor: cfg.color,
-                flexShrink: 0,
-                mt: 0.5,
-            }} />
-
-            {/* Contenido */}
-            <Box sx={{ flexGrow: 1 }}>
-                {/* Score + badge */}
-                <Box sx={{ display: "flex", alignItems: "baseline", gap: 2, flexWrap: "wrap" }}>
-                    <Typography
-                        sx={{
-                            fontSize: 38,
-                            fontWeight: 700,
-                            color: cfg.color,
-                            lineHeight: 1,
-                            fontVariantNumeric: "tabular-nums",
-                            letterSpacing: "-1px",
-                        }}
-                    >
-                        {riskScore !== null && riskScore !== undefined ? `${riskScore}%` : "—"}
-                    </Typography>
-                    <Chip
-                        label={cfg.label}
-                        size="small"
-                        sx={{
-                            bgcolor: `${cfg.color}20`,
-                            color: cfg.color,
-                            fontWeight: 700,
-                            fontSize: 11,
-                            border: `1px solid ${cfg.color}40`,
-                            height: 22,
-                        }}
-                    />
-                </Box>
-
-                {/* Comparativa temporal */}
-                {delta !== null && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.75 }}>
-                        {isDown
-                            ? <TrendingDownIcon sx={{ fontSize: 14, color: "#10b981" }} />
-                            : isUp
-                                ? <TrendingUpIcon sx={{ fontSize: 14, color: "#ef4444" }} />
-                                : null
-                        }
-                        <Typography variant="caption" sx={{
-                            color: isDown ? "#10b981" : isUp ? "#ef4444" : "text.secondary",
-                            fontWeight: 600,
-                        }}>
-                            {delta > 0 ? "+" : ""}{delta}% respecto a la semana anterior
-                        </Typography>
-                    </Box>
-                )}
-
-                {/* Descripción */}
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, lineHeight: 1.5 }}>
-                    {cfg.description}
+            {/* Score + badge */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Typography
+                    sx={{
+                        fontSize: 48,
+                        fontWeight: 300,
+                        color: "text.primary",
+                        lineHeight: 1,
+                        letterSpacing: "-2px",
+                    }}
+                >
+                    {riskScore !== null && riskScore !== undefined ? `${riskScore}%` : "—"}
                 </Typography>
-
-                {/* Nota de muestra */}
-                {sampleSize !== undefined && (
-                    <Typography variant="caption" color="text.disabled" sx={{ display: "block", mt: 1.5 }}>
-                        📊 {sampleSize} usuario{sampleSize !== 1 ? "s" : ""} analizados · Sin datos individuales expuestos
-                    </Typography>
-                )}
+                <Chip
+                    label={cfg.label}
+                    size="small"
+                    sx={{
+                        bgcolor: `${cfg.color}15`,
+                        color: cfg.color,
+                        fontWeight: 600,
+                        fontSize: 12,
+                        height: 24,
+                        border: "none"
+                    }}
+                />
             </Box>
+
+            {/* Comparativa temporal */}
+            {delta !== null && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    {isDown
+                        ? <TrendingDownIcon sx={{ fontSize: 16, color: "#10b981" }} />
+                        : isUp
+                            ? <TrendingUpIcon sx={{ fontSize: 16, color: "#ef4444" }} />
+                            : null
+                    }
+                    <Typography variant="body2" sx={{
+                        color: isDown ? "#10b981" : isUp ? "#ef4444" : "text.secondary",
+                        fontWeight: 500,
+                    }}>
+                        {delta > 0 ? "+" : ""}{delta}% respecto a la semana anterior
+                    </Typography>
+                </Box>
+            )}
+
+            {/* Descripción */}
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1, fontWeight: 400 }}>
+                {cfg.description}
+            </Typography>
+
+            {/* Nota de muestra */}
+            {sampleSize !== undefined && (
+                <Typography variant="caption" color="text.disabled" sx={{ display: "block", mt: 1 }}>
+                    Basado en {sampleSize} miembro{sampleSize !== 1 ? "s" : ""} · Sin datos individuales
+                </Typography>
+            )}
         </Box>
     );
 }

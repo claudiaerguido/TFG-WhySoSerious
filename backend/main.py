@@ -12,9 +12,9 @@ import nlp_model
 from scheduler_tasks import run_nightly_analysis
 from auth_graph_app import list_users, list_user_chats, list_chat_messages
 from db_supabase import (
-    get_team_risk_metrics, get_teams_list, get_team_risk_trend,
     ensure_org_user, get_user_role, get_workspaces_for_user,
-    get_workspace_risk_metrics, get_workspace_risk_trend, get_workspace_members,
+    get_workspace_risk_metrics, get_workspace_risk_trend,
+    get_workspace_members, get_workspace_member_risks,
 )
 
 # ==========================================
@@ -205,6 +205,18 @@ async def workspace_members(request: Request, workspace_id: int):
         return JSONResponse({"error": "Sin permisos para este workspace"}, status_code=403)
     members = get_workspace_members(workspace_id)
     return JSONResponse({"members": members, "workspace_id": workspace_id})
+
+
+@app.get("/api/workspace/member-risks")
+async def workspace_member_risks(request: Request, workspace_id: int, days: int = 7):
+    """Riesgo individual por miembro del workspace (alias + score). Protegido por rol."""
+    email, role = _require_session(request)
+    if not email:
+        return JSONResponse({"error": "No autenticado"}, status_code=401)
+    if not _check_workspace_access(email, role, workspace_id):
+        return JSONResponse({"error": "Sin permisos para este workspace"}, status_code=403)
+    result = get_workspace_member_risks(workspace_id, days)
+    return JSONResponse(result)
 
 
 @app.get("/api/me/info")

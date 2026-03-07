@@ -104,3 +104,13 @@ export async function fetchWorkspaceMembers(workspaceId) {
     if (!res.ok) throw new Error("Error al obtener miembros del workspace");
     return res.json(); // { members: [{alias, included}], workspace_id }
 }
+
+export async function fetchWorkspaceMemberRisks(workspaceId, days = 7) {
+    const res = await fetch(
+        `${BASE_URL}/api/workspace/member-risks?workspace_id=${workspaceId}&days=${days}`,
+        { credentials: "include" }
+    );
+    if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
+    if (!res.ok) throw new Error("Error al obtener riesgo por miembro");
+    return res.json(); // { members: [{alias, risk_score_percentage, risk_level, message_count}] }
+}

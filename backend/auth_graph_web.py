@@ -105,19 +105,16 @@ def list_my_chats(token):
 def list_chat_messages(token, chat_id, top=50):
     headers = {"Authorization": f"Bearer {token}"}
     msgs = []
-    skip = 0
+    url = f"{GRAPH_BASE}/chats/{chat_id}/messages?$top={top}"
 
-    while True:
-        resp = requests.get(
-            f"{GRAPH_BASE}/chats/{chat_id}/messages?$top={top}&$skip={skip}", 
-            headers=headers
-        )
+    while url:
+        resp = requests.get(url, headers=headers)
         if not resp.ok:
+            print(f"⚠️ Messages error chat {chat_id}: GRAPH ERROR {resp.status_code} ({url}): {resp.text}")
             break
 
-        batch = resp.json().get("value", [])
-        
-        for m in batch:
+        data = resp.json()
+        for m in data.get("value", []):
             if m.get("messageType") != "message":
                 continue
             body_content = m.get("body", {}).get("content", "")
@@ -133,10 +130,7 @@ def list_chat_messages(token, chat_id, top=50):
                 "from": sender_name,
                 "createdDateTime": m["createdDateTime"],
             })
-            
-        if len(batch) < top:
-            break
-            
-        skip += top
+
+        url = data.get("@odata.nextLink")
 
     return msgs

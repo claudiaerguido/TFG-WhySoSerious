@@ -7,13 +7,13 @@ import theme from "./theme";
 import { AuthProvider } from "./context/AuthContext";
 
 import AppShell from "./components/AppShell";
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import TeamRiskPage from "./pages/TeamRiskPage";
-import TeamsPage from "./pages/TeamsPage";
-import ReportsPage from "./pages/ReportsPage";
-import ProjectDetailPage from "./pages/ProjectDetailPage";
-import ProfilePage from "./pages/ProfilePage";
+import {
+  LoginPage,
+  DashboardPage,
+  TeamsPage,
+  ProjectDetailPage,
+  ProfilePage,
+} from "./pages";
 import { useMe } from "./context/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
@@ -54,11 +54,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <Route path="/login" element={<LoginPage />} />
               <Route element={<RequireAuth><AppShell /></RequireAuth>}>
                 <Route path="/" element={<DashboardPage />} />
-                <Route path="/team-risk" element={<TeamRiskPage />} />
+
                 <Route path="/teams" element={<TeamsPage />} />
                 <Route path="/teams/:id" element={<ProjectDetailPage />} />
                 <Route path="/workspaces/:id" element={<ProjectDetailPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
+
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>
             </Routes>

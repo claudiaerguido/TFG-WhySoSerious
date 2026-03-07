@@ -1,0 +1,198 @@
+/* ProjectDetailPage.css */
+
+.project-detail-container {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 16px 32px 16px;
+}
+
+.project-detail-back-btn {
+    margin-bottom: 24px !important;
+    color: #9cb4ca !important;
+    /* text.secondary approx */
+    text-transform: none !important;
+}
+
+.project-detail-header {
+    margin-bottom: 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.project-detail-header-left {
+    flex: 1;
+}
+
+.project-detail-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.project-detail-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.project-detail-members-chip {
+    font-size: 11px !important;
+    height: 22px !important;
+    font-weight: 600 !important;
+}
+
+.project-detail-subtitle {
+    margin-top: 4px;
+}
+
+.project-detail-success-alert {
+    margin-bottom: 24px;
+    border-radius: 8px !important;
+}
+
+.project-detail-period-selector {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.project-detail-period-btn {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+.project-detail-trend-card {
+    height: 100% !important;
+    min-height: 280px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    box-shadow: none !important;
+}
+
+.project-detail-trend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.project-detail-trend-empty {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9cb4ca;
+    /* text.secondary */
+    text-align: center;
+    font-size: 14px;
+}
+
+.project-detail-trend-chart-container {
+    height: 260px;
+    margin-top: 16px;
+}
+
+.project-detail-tooltip {
+    background-color: #1e293b;
+    /* background.paper */
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.project-detail-card {
+    height: 100%;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    box-shadow: none !important;
+}
+
+.project-detail-members-subtitle {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.project-detail-members-empty {
+    font-size: 14px;
+}
+
+.project-detail-members-table-container {
+    background-color: transparent !important;
+    border-radius: 8px !important;
+}
+
+.project-detail-table-header-cell {
+    color: #9cb4ca !important;
+    /* text.secondary */
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.project-detail-table-alias-cell {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.project-detail-table-status-cell {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.project-detail-table-status-chip {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+}
+
+.project-detail-weights-subtitle {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.project-detail-weight-box {
+    padding: 16px 12px;
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.project-detail-weight-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.project-detail-nlp-card {
+    background-color: rgba(99, 102, 241, 0.04) !important;
+    border: 1px solid rgba(99, 102, 241, 0.1) !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+}
+
+.project-detail-nlp-title {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.project-detail-nlp-text {
+    line-height: 1.6 !important;
+}

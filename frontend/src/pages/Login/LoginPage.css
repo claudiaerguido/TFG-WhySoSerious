@@ -1,0 +1,42 @@
+/* LoginPage.css */
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 60% 40%, #1e1b4b 0%, #0f172a 70%) !important;
+}
+
+.login-paper {
+    padding: 48px !important;
+    border-radius: 16px !important;
+    text-align: center;
+    max-width: 440px;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(10px);
+}
+
+.login-logo {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.login-button {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    border-radius: 16px !important;
+}
+
+.login-privacy-note {
+    margin-top: 32px;
+    padding: 16px;
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: #9cb4ca;
+    /* Approx text.secondary */
+    font-size: 12px;
+}

@@ -6,8 +6,7 @@ import {
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupsIcon from "@mui/icons-material/Groups";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/LogoutOutlined";
 import MenuIcon from "@mui/icons-material/Menu";
 import { logoutUrl } from "../api/backend";
@@ -17,10 +16,10 @@ const DRAWER_WIDTH = 240;
 
 const NAV_ITEMS = [
     { label: "Dashboard", icon: <DashboardIcon />, path: "/" },
-    { label: "Riesgo de Equipo", icon: <MonitorHeartIcon />, path: "/team-risk" },
     { label: "Mis Equipos", icon: <GroupsIcon />, path: "/teams" },
-    { label: "Reportes", icon: <AssessmentIcon />, path: "/reports" },
+    { label: "Mi Perfil", icon: <AccountCircleIcon />, path: "/profile" },
 ];
+
 export default function AppShell() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const navigate = useNavigate();
@@ -31,7 +30,15 @@ export default function AppShell() {
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {/* Logo */}
             <Box sx={{ px: 3, py: 3, display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Box sx={{ fontSize: 28 }}>🧠</Box>
+                <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34 }}>
+                    <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="34" height="34" rx="8" fill="#6366f1" fillOpacity="0.15" />
+                        <polyline
+                            points="4,17 9,17 12,10 15,24 18,14 21,20 24,17 30,17"
+                            fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        />
+                    </svg>
+                </Box>
                 <Box>
                     <Typography variant="subtitle1" fontWeight={800} color="primary.light" lineHeight={1.1}>
                         WhySoSerious
@@ -78,14 +85,8 @@ export default function AppShell() {
 
             <Divider sx={{ borderColor: "rgba(255,255,255,0.07)" }} />
 
-            {/* Footer del drawer */}
-            <Box sx={{ px: 2, py: 2 }}>
-                <Chip
-                    label="Sprint 4 · MVP"
-                    size="small"
-                    sx={{ bgcolor: "primary.dark", color: "primary.light", fontWeight: 600, fontSize: 11 }}
-                />
-            </Box>
+
+
         </Box>
     );
 

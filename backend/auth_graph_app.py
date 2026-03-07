@@ -103,21 +103,27 @@ def list_user_chats(user_id: str) -> List[Dict]:
 
 def list_chat_messages(chat_id: str, top: int = 50) -> List[Dict]:
     """
-    Lista mensajes de un chat concreto con paginación.
+    Lista mensajes de un chat concreto con paginación via @odata.nextLink.
+    Graph API no permite $skip en este endpoint.
     Requiere permiso: ChatMessage.Read.All
     """
+    token = get_app_token()
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
     all_messages = []
-    skip = 0
+    url = f"{GRAPH_BASE}/chats/{chat_id}/messages?$top={top}"
 
-    while True:
-        data = graph_get(
-            f"/chats/{chat_id}/messages",
-            params={"$top": top, "$skip": skip}
-        )
-        
-        batch = data.get("value", [])
-        
-        for m in batch:
+    while url:
+        response = requests.get(url, headers=headers)
+        if not response.ok:
+            raise RuntimeError(
+                f"GRAPH ERROR {response.status_code} ({url}): {response.text}"
+            )
+
+        data = response.json()
+        for m in data.get("value", []):
             body_html = m.get("body", {}).get("content", "")
             text = html_to_text(body_html)
 
@@ -133,15 +139,11 @@ def list_chat_messages(chat_id: str, top: int = 50) -> List[Dict]:
                 "id": m.get("id"),
                 "text": text,
                 "from": sender_name,
-                "raw_from": sender, # Added this for filtering in scheduler_tasks.py
+                "raw_from": sender,
                 "createdDateTime": m.get("createdDateTime"),
             })
 
-        # Criterio de parada de paginación
-        if len(batch) < top:
-            break
-            
-        skip += top
+        url = data.get("@odata.nextLink")
 
     return all_messages
 

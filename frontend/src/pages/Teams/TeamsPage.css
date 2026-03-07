@@ -1,0 +1,80 @@
+/* TeamsPage.css */
+
+/* Main container styles can go here if needed in the future */
+
+.teams-header-container {
+    margin-bottom: 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.teams-title {
+    font-weight: 800 !important;
+}
+
+.teams-subtitle {
+    margin-top: 4px !important;
+}
+
+.teams-alert-error {
+    margin-bottom: 24px !important;
+}
+
+.teams-alert-info {
+    margin-bottom: 24px !important;
+}
+
+/* WorkspaceTable styles */
+.workspace-table-container {
+    margin-bottom: 32px;
+}
+
+.workspace-table-title {
+    margin-bottom: 12px !important;
+    font-weight: 700 !important;
+}
+
+.workspace-table-paper {
+    background-color: #1e293b !important;
+    /* background.paper approx */
+    border-radius: 12px !important;
+    /* borderRadius 3 */
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.workspace-table-header-cell {
+    font-weight: 700 !important;
+    color: #9cb4ca !important;
+    /* text.secondary approx */
+}
+
+/* WorkspaceRow styles */
+.workspace-row-name {
+    font-weight: 600 !important;
+}
+
+.workspace-type-chip {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+.workspace-owner-chip {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    margin-right: 8px !important;
+}
+
+.workspace-owner-icon {
+    font-size: 14px !important;
+}
+
+/* Skeleton Table styles */
+.teams-skeleton-paper {
+    background-color: #1e293b !important;
+    /* background.paper approx */
+    border-radius: 12px !important;
+    /* borderRadius 3 */
+}

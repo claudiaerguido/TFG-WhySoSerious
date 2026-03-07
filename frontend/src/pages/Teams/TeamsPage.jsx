@@ -7,9 +7,10 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import LockIcon from "@mui/icons-material/Lock";
 import StarIcon from "@mui/icons-material/Star";
-import { fetchMyWorkspaces } from "../api/backend";
-import { useMe } from "../context/AuthContext";
-import { RISK_COLOR, fmtPct } from "../utils/risk";
+import { fetchMyWorkspaces } from "../../api/backend";
+import { useMe } from "../../context/AuthContext";
+import { RISK_COLOR, fmtPct } from "../../utils/risk";
+import "./TeamsPage.css";
 
 const TYPE_LABEL = { team: "Equipo Organizativo", project: "Proyecto Asignado" };
 const TYPE_COLOR = { team: "primary", project: "secondary" };
@@ -19,7 +20,7 @@ function WorkspaceRow({ ws, isOwner }) {
     return (
         <TableRow hover>
             <TableCell>
-                <Typography fontWeight={600}>{ws.name}</Typography>
+                <Typography className="workspace-row-name">{ws.name}</Typography>
             </TableCell>
             <TableCell>
                 <Chip
@@ -27,18 +28,19 @@ function WorkspaceRow({ ws, isOwner }) {
                     size="small"
                     variant="outlined"
                     color={TYPE_COLOR[ws.type] ?? "default"}
-                    sx={{ fontSize: 11, fontWeight: 600 }}
+                    className="workspace-type-chip"
                 />
             </TableCell>
             <TableCell>
                 {isOwner && (
                     <Chip
-                        icon={<StarIcon sx={{ fontSize: 14 }} />}
+                        icon={<StarIcon className="workspace-owner-icon" />}
                         label="Responsable"
                         size="small"
                         color="warning"
                         variant="outlined"
-                        sx={{ fontSize: 10, fontWeight: 700, mr: 1, borderColor: "warning.main", color: "warning.main" }}
+                        className="workspace-owner-chip"
+                        sx={{ borderColor: "warning.main", color: "warning.main" }}
                     />
                 )}
                 {ws.owner_email ?? "—"}
@@ -61,18 +63,18 @@ function WorkspaceRow({ ws, isOwner }) {
 function WorkspaceTable({ title, data, currentUser }) {
     if (data.length === 0) return null;
     return (
-        <Box mb={4}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.5, color: "text.primary" }}>
+        <Box className="workspace-table-container">
+            <Typography variant="subtitle1" className="workspace-table-title" color="text.primary">
                 {title} ({data.length})
             </Typography>
-            <TableContainer component={Paper} sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid rgba(255,255,255,0.05)" }}>
+            <TableContainer component={Paper} className="workspace-table-paper">
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 700, color: "text.secondary" }}>Nombre</TableCell>
-                            <TableCell sx={{ fontWeight: 700, color: "text.secondary" }}>Tipo</TableCell>
-                            <TableCell sx={{ fontWeight: 700, color: "text.secondary" }}>Propietario / Responsable</TableCell>
-                            <TableCell sx={{ fontWeight: 700, color: "text.secondary" }}>Acción</TableCell>
+                            <TableCell className="workspace-table-header-cell">Nombre</TableCell>
+                            <TableCell className="workspace-table-header-cell">Tipo</TableCell>
+                            <TableCell className="workspace-table-header-cell">Propietario / Responsable</TableCell>
+                            <TableCell className="workspace-table-header-cell">Acción</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -106,11 +108,11 @@ export default function TeamsPage() {
     const unclassified = workspaces.filter(w => w.type !== "team" && w.type !== "project");
 
     return (
-        <Box>
-            <Box mb={4} display="flex" alignItems="flex-start" justifyContent="space-between" flexWrap="wrap" gap={2}>
+        <Box className="teams-page-container">
+            <Box className="teams-header-container">
                 <Box>
-                    <Typography variant="h5" fontWeight={800}>Mis Equipos / Proyectos</Typography>
-                    <Typography variant="body2" color="text.secondary" mt={0.5}>
+                    <Typography variant="h5" className="teams-title">Mis Equipos / Proyectos</Typography>
+                    <Typography variant="body2" color="text.secondary" className="teams-subtitle">
                         {user?.role === "manager"
                             ? "Visualizando como: Dirección (Mánager). Acceso total a las estructuras de la empresa."
                             : "Vista limitada a los equipos y proyectos en los que tienes asignación vigente."
@@ -120,13 +122,13 @@ export default function TeamsPage() {
             </Box>
 
             {isError && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" className="teams-alert-error">
                     No se pudieron cargar los workspaces. Comprueba la conexión con el backend.
                 </Alert>
             )}
 
             {!isLoading && !isError && workspaces.length === 0 && role && (
-                <Alert severity="info" icon={<LockIcon />} sx={{ mb: 3 }}>
+                <Alert severity="info" icon={<LockIcon />} className="teams-alert-info">
                     No tienes workspaces asignados en este momento. Contacta con tu responsable o administrador de Entra ID.
                 </Alert>
             )}
@@ -140,7 +142,7 @@ export default function TeamsPage() {
             )}
 
             {isLoading && (
-                <TableContainer component={Paper} sx={{ bgcolor: "background.paper", borderRadius: 3 }}>
+                <TableContainer component={Paper} className="teams-skeleton-paper">
                     <Table>
                         <TableBody>
                             {Array.from({ length: 3 }).map((_, i) => (
