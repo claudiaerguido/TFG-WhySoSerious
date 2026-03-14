@@ -28,27 +28,49 @@ export default function AppShell() {
 
     const drawerContent = (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "#fff" }}>
-            {/* Logo */}
-            <Box sx={{ px: 3, py: 4, display: "flex", alignItems: "center", gap: 1.5 }}>
+            {/* Logo Professional Redesign */}
+            <Box sx={{ px: 3.5, py: 4.5, display: "flex", alignItems: "center", gap: 2 }}>
                 <Box sx={{
-                    bgcolor: "primary.main",
-                    width: 36, height: 36,
-                    borderRadius: 2,
+                    position: 'relative',
+                    width: 42, height: 42,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)'
+                    boxShadow: '0 8px 16px rgba(99, 102, 241, 0.25), inset 0 -2px 5px rgba(0,0,0,0.1)',
+                    '&:after': {
+                        content: '""',
+                        position: 'absolute',
+                        top: '15%', left: '15%',
+                        width: '30%', height: '30%',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.2)',
+                        filter: 'blur(2px)'
+                    }
                 }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 17L9 17L12 10L15 24L18 14L21 20L24 17L30 17" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M3 13C3 13 4.5 13 5.5 11C6.5 9 7.5 4 8.5 4C9.5 4 11 18 12 18C13 18 14.5 14 15.5 14C16.5 14 18 16 19 16C20 16 21 15 21 15" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </Box>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight={900} color="text.primary" sx={{ letterSpacing: -0.5, lineHeight: 1 }}>
-                        WhySoSerious
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: 1 }}>
-                        ORGANIZATIONAL HEALTH
+                    <Typography variant="h6" sx={{
+                        fontWeight: 300,
+                        color: "#0f172a",
+                        letterSpacing: -1,
+                        lineHeight: 1,
+                        display: 'flex',
+                        alignItems: 'baseline'
+                    }}>
+                        WhySo
+                        <Box component="span" sx={{
+                            fontWeight: 900,
+                            background: 'linear-gradient(90deg, #4f46e5, #818cf8)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                            Serious
+                        </Box>
                     </Typography>
                 </Box>
             </Box>

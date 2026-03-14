@@ -1,7 +1,7 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-    Box, Grid, Card, CardContent, Typography, Button, Skeleton, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, IconButton, Alert
+    Box, Grid, Card, CardContent, Typography, Skeleton, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, IconButton, Alert
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
@@ -64,7 +64,6 @@ function KpiCard({ title, value, badgeText, badgeType, subText }) {
 export default function DashboardPage() {
     const navigate = useNavigate();
     const { user } = useMe();
-    const isPrivileged = user?.role === "admin" || user?.role === "manager";
 
     const { data: workspacesData, isLoading: isLoadingWs } = useQuery({
         queryKey: ["myWorkspaces"],

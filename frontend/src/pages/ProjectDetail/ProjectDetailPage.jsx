@@ -16,7 +16,6 @@ import {
   fetchWorkspaceMembers, fetchWorkspaceMemberRisks, triggerAnalysis, fetchMyWorkspaces
 } from "../../api/backend";
 import RiskCard from "../../components/RiskCard";
-import { fmtPct } from "../../utils/risk";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip
 } from "recharts";
