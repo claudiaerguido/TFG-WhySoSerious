@@ -1,160 +1,138 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-    Box, Typography, Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Paper, Chip, Button, Skeleton, Alert,
+    Box, Typography, Skeleton, Avatar, Chip, Divider, Paper
 } from "@mui/material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import LockIcon from "@mui/icons-material/Lock";
-import StarIcon from "@mui/icons-material/Star";
-import { fetchMyWorkspaces } from "../../api/backend";
-import { useMe } from "../../context/AuthContext";
-import { RISK_COLOR, fmtPct } from "../../utils/risk";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { fetchMyWorkspaces, fetchWorkspaceRisk } from "../../api/backend";
 import "./TeamsPage.css";
 
-const TYPE_LABEL = { team: "Equipo Organizativo", project: "Proyecto Asignado" };
-const TYPE_COLOR = { team: "primary", project: "secondary" };
+const CHIP_COLORS = {
+    Verde: { bg: '#dcfce7', text: '#16a34a' },
+    Amarillo: { bg: '#fef9c3', text: '#b45309' },
+    Rojo: { bg: '#fee2e2', text: '#dc2626' },
+};
 
-function WorkspaceRow({ ws, isOwner }) {
+function chipStyle(level) {
+    const c = CHIP_COLORS[level] ?? { bg: '#f1f5f9', text: '#64748b' };
+    return { bgcolor: c.bg, color: c.text, fontWeight: 700, fontSize: 11, border: 'none', height: 22 };
+}
+
+function TeamRow({ ws }) {
     const navigate = useNavigate();
+    const { data: riskData, isLoading } = useQuery({
+        queryKey: ["workspaceRisk", ws.id, 7],
+        queryFn: () => fetchWorkspaceRisk(ws.id, 7),
+        staleTime: 60_000,
+    });
+
+    const level = riskData?.risk_level ?? "—";
+    const pct = riskData?.risk_score_percentage;
+    const pctColor = level === 'Rojo' ? '#dc2626' : level === 'Amarillo' ? '#b45309' : level === 'Verde' ? '#16a34a' : 'text.primary';
+
     return (
-        <TableRow hover>
-            <TableCell>
-                <Typography className="workspace-row-name">{ws.name}</Typography>
-            </TableCell>
-            <TableCell>
-                <Chip
-                    label={TYPE_LABEL[ws.type] ?? ws.type}
-                    size="small"
-                    variant="outlined"
-                    color={TYPE_COLOR[ws.type] ?? "default"}
-                    className="workspace-type-chip"
-                />
-            </TableCell>
-            <TableCell>
-                {isOwner && (
-                    <Chip
-                        icon={<StarIcon className="workspace-owner-icon" />}
-                        label="Responsable"
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                        className="workspace-owner-chip"
-                        sx={{ borderColor: "warning.main", color: "warning.main" }}
-                    />
-                )}
-                {ws.owner_email ?? "—"}
-            </TableCell>
-            <TableCell>
-                <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<VisibilityIcon />}
-                    onClick={() => navigate(`/workspaces/${ws.id}`)}
-                >
-                    Detalle
-                </Button>
-            </TableCell>
-        </TableRow>
+        <Box
+            className="team-row"
+            onClick={() => navigate(`/workspaces/${ws.id}`)}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                <Avatar sx={{
+                    bgcolor: ws.type === 'team' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.1)',
+                    color: ws.type === 'team' ? 'primary.main' : 'success.main',
+                    width: 38, height: 38, fontSize: 13, fontWeight: 800
+                }}>
+                    {ws.name.substring(0, 2).toUpperCase()}
+                </Avatar>
+                <Box>
+                    <Typography variant="body1" fontWeight={700} color="text.primary" sx={{ lineHeight: 1.3 }}>
+                        {ws.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled">
+                        {ws.type === 'team' ? 'Equipo' : 'Proyecto'}
+                    </Typography>
+                </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Box sx={{ textAlign: 'right', minWidth: 80 }}>
+                    {isLoading ? <Skeleton width={50} /> : (
+                        <Typography variant="body2" fontWeight={700} sx={{ color: pctColor }}>
+                            {pct !== undefined ? `${pct}%` : "—"}
+                        </Typography>
+                    )}
+                    <Typography variant="caption" color="text.disabled">Riesgo</Typography>
+                </Box>
+
+                <Box sx={{ minWidth: 70 }}>
+                    {isLoading ? <Skeleton width={56} height={24} /> : (
+                        <Chip
+                            label={level}
+                            size="small"
+                            sx={chipStyle(level)}
+                        />
+                    )}
+                </Box>
+
+                <ChevronRightIcon sx={{ color: 'text.disabled', fontSize: 20 }} className="row-chevron" />
+            </Box>
+        </Box>
     );
 }
 
-// Subcomponente de tabla para reutilizar
-function WorkspaceTable({ title, data, currentUser }) {
-    if (data.length === 0) return null;
+function TeamSection({ title, items }) {
+    if (!items.length) return null;
     return (
-        <Box className="workspace-table-container">
-            <Typography variant="subtitle1" className="workspace-table-title" color="text.primary">
-                {title} ({data.length})
+        <Box sx={{ mb: 5 }}>
+            <Typography variant="overline" color="text.disabled" fontWeight={700} sx={{ letterSpacing: 1.5 }}>
+                {title} · {items.length}
             </Typography>
-            <TableContainer component={Paper} className="workspace-table-paper">
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell className="workspace-table-header-cell">Nombre</TableCell>
-                            <TableCell className="workspace-table-header-cell">Tipo</TableCell>
-                            <TableCell className="workspace-table-header-cell">Propietario / Responsable</TableCell>
-                            <TableCell className="workspace-table-header-cell">Acción</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {data.map((ws) => (
-                            <WorkspaceRow key={ws.id} ws={ws} isOwner={ws.owner_email === currentUser?.user_email} />
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            <Paper elevation={0} sx={{ mt: 1.5, borderRadius: 3, border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+                {items.map((ws, i) => (
+                    <Box key={ws.id}>
+                        {i > 0 && <Divider sx={{ mx: 2, opacity: 0.5 }} />}
+                        <TeamRow ws={ws} />
+                    </Box>
+                ))}
+            </Paper>
         </Box>
     );
 }
 
 export default function TeamsPage() {
-    const { user } = useMe();
-    const { data, isLoading, isError } = useQuery({
+    const { data: workspacesData, isLoading } = useQuery({
         queryKey: ["myWorkspaces"],
         queryFn: fetchMyWorkspaces,
         staleTime: 60_000,
     });
 
-    const workspaces = data?.workspaces ?? [];
-    const role = data?.role;
-
-    if (import.meta.env.DEV && data) {
-        console.log("[TeamsPage] workspaces payload:", data);
-    }
-
+    const workspaces = workspacesData?.workspaces ?? [];
     const teams = workspaces.filter(w => w.type === "team");
-    const projects = workspaces.filter(w => w.type === "project");
-    const unclassified = workspaces.filter(w => w.type !== "team" && w.type !== "project");
+    const projects = workspaces.filter(w => w.type !== "team");
 
     return (
-        <Box className="teams-page-container">
-            <Box className="teams-header-container">
-                <Box>
-                    <Typography variant="h5" className="teams-title">Mis Equipos / Proyectos</Typography>
-                    <Typography variant="body2" color="text.secondary" className="teams-subtitle">
-                        {user?.role === "manager"
-                            ? "Visualizando como: Dirección (Mánager). Acceso total a las estructuras de la empresa."
-                            : "Vista limitada a los equipos y proyectos en los que tienes asignación vigente."
-                        }
-                    </Typography>
-                </Box>
+        <Box sx={{ maxWidth: 860, mx: 'auto' }}>
+            <Box sx={{ mb: 5 }}>
+                <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: -0.5 }}>
+                    Equipos
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Estado de bienestar por equipo basado en actividad de los últimos 7 días.
+                </Typography>
             </Box>
 
-            {isError && (
-                <Alert severity="error" className="teams-alert-error">
-                    No se pudieron cargar los workspaces. Comprueba la conexión con el backend.
-                </Alert>
-            )}
-
-            {!isLoading && !isError && workspaces.length === 0 && role && (
-                <Alert severity="info" icon={<LockIcon />} className="teams-alert-info">
-                    No tienes workspaces asignados en este momento. Contacta con tu responsable o administrador de Entra ID.
-                </Alert>
-            )}
-
-            {!isLoading && workspaces.length > 0 && (
+            {isLoading ? (
                 <Box>
-                    <WorkspaceTable title="🏢 Equipos Organizativos" data={teams} currentUser={user} />
-                    <WorkspaceTable title="🚀 Proyectos Especiales" data={projects} currentUser={user} />
-                    <WorkspaceTable title="Agrupaciones Genéricas" data={unclassified} currentUser={user} />
+                    {[1, 2, 3].map(i => <Skeleton key={i} variant="rounded" height={64} sx={{ mb: 1.5, borderRadius: 3 }} />)}
                 </Box>
-            )}
-
-            {isLoading && (
-                <TableContainer component={Paper} className="teams-skeleton-paper">
-                    <Table>
-                        <TableBody>
-                            {Array.from({ length: 3 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    {Array.from({ length: 4 }).map((_, j) => (
-                                        <TableCell key={j}><Skeleton /></TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+            ) : workspaces.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 10, color: 'text.disabled' }}>
+                    <Typography variant="body1">No hay equipos asignados</Typography>
+                </Box>
+            ) : (
+                <>
+                    <TeamSection title="Equipos Organizativos" items={teams} />
+                    <TeamSection title="Proyectos" items={projects} />
+                </>
             )}
         </Box>
     );

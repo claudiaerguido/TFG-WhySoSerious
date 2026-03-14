@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider, CssBaseline } from "@mui/material";
+import { ThemeProvider, CssBaseline, Box, CircularProgress } from "@mui/material";
 import theme from "./theme";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -15,8 +15,6 @@ import {
   ProfilePage,
 } from "./pages";
 import { useMe } from "./context/AuthContext";
-import { Navigate } from "react-router-dom";
-import { Box, CircularProgress } from "@mui/material";
 
 function RequireAuth({ children }) {
   const { user, isLoading } = useMe();
@@ -42,7 +40,6 @@ const queryClient = new QueryClient({
   },
 });
 
-
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -54,13 +51,14 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <Route path="/login" element={<LoginPage />} />
               <Route element={<RequireAuth><AppShell /></RequireAuth>}>
                 <Route path="/" element={<DashboardPage />} />
-
                 <Route path="/teams" element={<TeamsPage />} />
                 <Route path="/teams/:id" element={<ProjectDetailPage />} />
                 <Route path="/workspaces/:id" element={<ProjectDetailPage />} />
-
+                <Route path="/project/:id" element={<ProjectDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>
+              {/* Redirección para rutas no encontradas y evitar pantallas blancas */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
         </ThemeProvider>

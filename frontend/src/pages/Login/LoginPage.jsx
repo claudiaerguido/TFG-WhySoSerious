@@ -24,8 +24,8 @@ export default function LoginPage() {
                 <Typography variant="h4" fontWeight={800} color="text.primary" gutterBottom>
                     WhySoSerious
                 </Typography>
-                <Typography variant="body1" color="text.secondary" mb={1}>
-                    Observatorio de Salud Mental Laboral
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                    Employee Well-being Insights Platform
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mb={4}>
                     Inicia sesión con tu cuenta de Microsoft para acceder al panel de tu equipo.
