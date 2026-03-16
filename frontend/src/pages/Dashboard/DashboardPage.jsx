@@ -7,7 +7,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import { fetchMyWorkspaces, fetchWorkspaceRisk } from "../../api/backend";
+import { fetchMyTeamsAndProjects, fetchTeamRisk, fetchProjectRisk } from "../../api/backend";
 import { useMe } from "../../context/AuthContext";
 import "./DashboardPage.css";
 
@@ -66,19 +66,24 @@ export default function DashboardPage() {
     const { user } = useMe();
 
     const { data: workspacesData, isLoading: isLoadingWs } = useQuery({
-        queryKey: ["myWorkspaces"],
-        queryFn: fetchMyWorkspaces,
+        queryKey: ["myTeamsAndProjects"],
+        queryFn: fetchMyTeamsAndProjects,
         staleTime: 60_000,
     });
 
-    const workspaces = workspacesData?.workspaces ?? [];
-    const totalTeams = workspaces.filter(w => w.type === "team").length;
-    const totalProjects = workspaces.filter(w => w.type === "project").length;
+    const teams = workspacesData?.teams ?? [];
+    const projects = workspacesData?.projects ?? [];
+    const totalItems = teams.length + projects.length;
+
+    const allWorkspaces = [
+        ...teams.map(t => ({ ...t, type: "team" })),
+        ...projects.map(p => ({ ...p, type: "project" }))
+    ];
 
     const riskQueries = useQueries({
-        queries: workspaces.map(ws => ({
-            queryKey: ["workspaceRisk", ws.id, 7],
-            queryFn: () => fetchWorkspaceRisk(ws.id, 7),
+        queries: allWorkspaces.map(ws => ({
+            queryKey: [ws.type === "team" ? "teamRisk" : "projectRisk", ws.id, 7],
+            queryFn: () => ws.type === "team" ? fetchTeamRisk(ws.id, 7) : fetchProjectRisk(ws.id, 7),
             staleTime: 60_000,
             retry: false,
         }))
@@ -86,7 +91,7 @@ export default function DashboardPage() {
 
     const allLoaded = riskQueries.length > 0 && riskQueries.every(q => !q.isLoading);
 
-    const workspacesWithRisk = workspaces.map((ws, i) => {
+    const workspacesWithRisk = allWorkspaces.map((ws, i) => {
         const riskData = riskQueries[i].data;
         const isLoading = riskQueries[i].isLoading;
         const pct = riskData?.risk_score_percentage;
@@ -126,11 +131,11 @@ export default function DashboardPage() {
                 <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
                     <Box sx={{ width: '100%' }}>
                         <KpiCard
-                            title="Workspaces visibles"
-                            value={isLoadingWs ? "..." : workspaces.length}
-                            badgeText={totalTeams.toString()}
+                            title="Entidades visibles"
+                            value={isLoadingWs ? "..." : totalItems}
+                            badgeText={teams.length.toString()}
                             badgeType="circle"
-                            subText={`Equipos · ${totalProjects} Proyectos`}
+                            subText={`Equipos · ${projects.length} Proyectos`}
                         />
                     </Box>
                 </Grid>
@@ -177,8 +182,8 @@ export default function DashboardPage() {
                 <CardContent sx={{ p: 4, pb: "32px !important" }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography variant="h6" fontWeight={700}>Detalles de Workspaces</Typography>
-                            <Chip label={`${workspaces.length} activos`} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', fontWeight: 600, color: 'text.secondary' }} />
+                            <Typography variant="h6" fontWeight={700}>Detalles de Equipos y Proyectos</Typography>
+                            <Chip label={`${totalItems} total`} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', fontWeight: 600, color: 'text.secondary' }} />
                         </Box>
                     </Box>
 
@@ -202,10 +207,10 @@ export default function DashboardPage() {
                                         </TableCell>
                                     </TableRow>
                                 ) : workspacesWithRisk.map((ws) => (
-                                    <TableRow key={ws.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', transition: 'background-color 0.2s' }} onClick={() => navigate(`/workspaces/${ws.id}`)}>
+                                    <TableRow key={`${ws.type}-${ws.id}`} hover sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', transition: 'background-color 0.2s' }} onClick={() => navigate(`/${ws.type}/${ws.id}`)}>
                                         <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)', py: 2 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                <Avatar sx={{ width: 36, height: 36, bgcolor: ws.type === 'team' ? 'primary.main' : 'secondary.main', fontSize: 14, fontWeight: 700 }}>
+                                                <Avatar sx={{ width: 36, height: 36, bgcolor: ws.type === 'team' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.1)', color: ws.type === 'team' ? 'primary.main' : 'success.main', fontSize: 13, fontWeight: 800 }}>
                                                     {ws.name.substring(0, 2).toUpperCase()}
                                                 </Avatar>
                                                 <Typography variant="body2" fontWeight={700} color="text.primary">
@@ -220,7 +225,7 @@ export default function DashboardPage() {
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
                                             <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                                {ws.riskData?.sample_size ?? 0} eval.
+                                                {ws.riskData?.members?.length ?? 0} miembros
                                             </Typography>
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>

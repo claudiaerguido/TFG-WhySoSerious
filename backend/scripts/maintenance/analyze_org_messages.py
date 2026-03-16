@@ -1,7 +1,11 @@
 from typing import Optional
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from auth_graph_app import list_users, list_user_chats, list_chat_messages
 from message_analyzer import analyze_message
-from db_supabase import save_risk_metrics, get_supabase_client
+from db_client import get_supabase_client
+from db_repository import save_risk_metrics
 
 
 def _load_workspace_membership():
@@ -105,6 +109,7 @@ def analyze_my_tfg_messages():
                         continue
 
                     save_risk_metrics(
+                        supabase=supabase,
                         user_email=sender_email,
                         timestamp=msg["createdDateTime"],
                         scores=analysis["labels"],

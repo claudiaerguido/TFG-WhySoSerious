@@ -101,50 +101,80 @@ def list_user_chats(user_id: str) -> List[Dict]:
     data = graph_get(f"/users/{user_id}/chats")
     return data.get("value", [])
 
+def list_chat_members(chat_id: str) -> List[str]:
+    """
+    Lista los emails de los participantes de un chat.
+    Requiere permiso: Chat.Read.All
+    """
+    try:
+        data = graph_get(f"/chats/{chat_id}/members")
+        members = data.get("value", [])
+        emails = []
+        for m in members:
+            # Los miembros de tipo aadUser tienen email en 'email' o 'userPrincipalName'
+            email = m.get("email") or m.get("userPrincipalName")
+            if email:
+                emails.append(email.lower())
+        return emails
+    except Exception as e:
+        print(f"⚠️ Error obteniendo miembros de chat {chat_id}: {e}")
+        return []
+
 def list_chat_messages(chat_id: str, top: int = 50) -> List[Dict]:
     """
     Lista mensajes de un chat concreto con paginación via @odata.nextLink.
     Graph API no permite $skip en este endpoint.
     Requiere permiso: ChatMessage.Read.All
     """
-    token = get_app_token()
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
+# Caché global para mapear IDs de usuario a Emails
+USER_CACHE = {}
+
+def get_user_email_from_id(user_id: str) -> Optional[str]:
+    """Resuelve el email de un usuario desde el caché o API"""
+    if user_id in USER_CACHE:
+        return USER_CACHE[user_id]
+    
+    # Fallback: intentar consultarlo a Graph
+    try:
+        user_data = graph_get(f"/users/{user_id}")
+        email = user_data.get("userPrincipalName") or user_data.get("mail")
+        if email:
+            USER_CACHE[user_id] = email.lower()
+            return USER_CACHE[user_id]
+    except:
+        pass
+    return None
+
+def list_chat_messages(chat_id: str, top: int = 20) -> List[Dict]:
+    """Lista mensajes de un chat, extrayendo el email real del remitente."""
+    url = f"/chats/{chat_id}/messages?$top={top}&$orderby=createdDateTime desc"
+    data = graph_get(url)
     all_messages = []
-    url = f"{GRAPH_BASE}/chats/{chat_id}/messages?$top={top}"
+    
+    for m in data.get("value", []):
+        body = m.get("body", {})
+        text = BeautifulSoup(body.get("content", ""), "html.parser").get_text().strip()
+        
+        sender = m.get("from") or {}
+        user_info = sender.get("user") or {}
+        
+        # 1. Intentar sacar el email directamente
+        sender_email = user_info.get("userPrincipalName") or user_info.get("email")
+        
+        # 2. Si no está, usar el ID para resolverlo desde el caché
+        if not sender_email and user_info.get("id"):
+            sender_email = get_user_email_from_id(user_info.get("id"))
+            
+        sender_name = user_info.get("displayName") or "Unknown"
 
-    while url:
-        response = requests.get(url, headers=headers)
-        if not response.ok:
-            raise RuntimeError(
-                f"GRAPH ERROR {response.status_code} ({url}): {response.text}"
-            )
-
-        data = response.json()
-        for m in data.get("value", []):
-            body_html = m.get("body", {}).get("content", "")
-            text = html_to_text(body_html)
-
-            sender = m.get("from")
-            if sender:
-                user_info = sender.get("user") or {}
-                app_info = sender.get("application") or {}
-                sender_name = user_info.get("displayName") or app_info.get("displayName") or "Desconocido"
-            else:
-                sender_name = "Sistema / Evento"
-
+        if text:
             all_messages.append({
                 "id": m.get("id"),
                 "text": text,
                 "from": sender_name,
-                "raw_from": sender,
+                "sender_email": sender_email.lower() if sender_email else None,
                 "createdDateTime": m.get("createdDateTime"),
             })
-
-        url = data.get("@odata.nextLink")
-
     return all_messages
 
 # ==========================================

@@ -52,9 +52,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <Route element={<RequireAuth><AppShell /></RequireAuth>}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/teams" element={<TeamsPage />} />
-                <Route path="/teams/:id" element={<ProjectDetailPage />} />
-                <Route path="/workspaces/:id" element={<ProjectDetailPage />} />
+                <Route path="/team/:id" element={<ProjectDetailPage />} />
                 <Route path="/project/:id" element={<ProjectDetailPage />} />
+                <Route path="/workspaces/:id" element={<ProjectDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>
               {/* Redirección para rutas no encontradas y evitar pantallas blancas */}

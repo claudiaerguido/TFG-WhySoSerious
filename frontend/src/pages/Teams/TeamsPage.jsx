@@ -4,7 +4,7 @@ import {
     Box, Typography, Skeleton, Avatar, Chip, Divider, Paper
 } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { fetchMyWorkspaces, fetchWorkspaceRisk } from "../../api/backend";
+import { fetchMyTeamsAndProjects, fetchTeamRisk, fetchProjectRisk } from "../../api/backend";
 import "./TeamsPage.css";
 
 const CHIP_COLORS = {
@@ -18,11 +18,11 @@ function chipStyle(level) {
     return { bgcolor: c.bg, color: c.text, fontWeight: 700, fontSize: 11, border: 'none', height: 22 };
 }
 
-function TeamRow({ ws }) {
+function TeamRow({ item, type }) {
     const navigate = useNavigate();
     const { data: riskData, isLoading } = useQuery({
-        queryKey: ["workspaceRisk", ws.id, 7],
-        queryFn: () => fetchWorkspaceRisk(ws.id, 7),
+        queryKey: [type === "team" ? "teamRisk" : "projectRisk", item.id, 7],
+        queryFn: () => type === "team" ? fetchTeamRisk(item.id, 7) : fetchProjectRisk(item.id, 7),
         staleTime: 60_000,
     });
 
@@ -33,22 +33,22 @@ function TeamRow({ ws }) {
     return (
         <Box
             className="team-row"
-            onClick={() => navigate(`/workspaces/${ws.id}`)}
+            onClick={() => navigate(`/${type}/${item.id}`)}
         >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
                 <Avatar sx={{
-                    bgcolor: ws.type === 'team' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.1)',
-                    color: ws.type === 'team' ? 'primary.main' : 'success.main',
+                    bgcolor: type === 'team' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.1)',
+                    color: type === 'team' ? 'primary.main' : 'success.main',
                     width: 38, height: 38, fontSize: 13, fontWeight: 800
                 }}>
-                    {ws.name.substring(0, 2).toUpperCase()}
+                    {item.name.substring(0, 2).toUpperCase()}
                 </Avatar>
                 <Box>
                     <Typography variant="body1" fontWeight={700} color="text.primary" sx={{ lineHeight: 1.3 }}>
-                        {ws.name}
+                        {item.name}
                     </Typography>
                     <Typography variant="caption" color="text.disabled">
-                        {ws.type === 'team' ? 'Equipo' : 'Proyecto'}
+                        {type === 'team' ? 'Equipo Organ.' : 'Proyecto Táctico'}
                     </Typography>
                 </Box>
             </Box>
@@ -79,7 +79,7 @@ function TeamRow({ ws }) {
     );
 }
 
-function TeamSection({ title, items }) {
+function TeamSection({ title, items, type }) {
     if (!items.length) return null;
     return (
         <Box sx={{ mb: 5 }}>
@@ -87,10 +87,10 @@ function TeamSection({ title, items }) {
                 {title} · {items.length}
             </Typography>
             <Paper elevation={0} sx={{ mt: 1.5, borderRadius: 3, border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden' }}>
-                {items.map((ws, i) => (
-                    <Box key={ws.id}>
+                {items.map((it, i) => (
+                    <Box key={it.id}>
                         {i > 0 && <Divider sx={{ mx: 2, opacity: 0.5 }} />}
-                        <TeamRow ws={ws} />
+                        <TeamRow item={it} type={type} />
                     </Box>
                 ))}
             </Paper>
@@ -100,14 +100,13 @@ function TeamSection({ title, items }) {
 
 export default function TeamsPage() {
     const { data: workspacesData, isLoading } = useQuery({
-        queryKey: ["myWorkspaces"],
-        queryFn: fetchMyWorkspaces,
+        queryKey: ["myTeamsAndProjects"],
+        queryFn: fetchMyTeamsAndProjects,
         staleTime: 60_000,
     });
 
-    const workspaces = workspacesData?.workspaces ?? [];
-    const teams = workspaces.filter(w => w.type === "team");
-    const projects = workspaces.filter(w => w.type !== "team");
+    const teams = workspacesData?.teams ?? [];
+    const projects = workspacesData?.projects ?? [];
 
     return (
         <Box sx={{ maxWidth: 860, mx: 'auto' }}>
@@ -124,14 +123,14 @@ export default function TeamsPage() {
                 <Box>
                     {[1, 2, 3].map(i => <Skeleton key={i} variant="rounded" height={64} sx={{ mb: 1.5, borderRadius: 3 }} />)}
                 </Box>
-            ) : workspaces.length === 0 ? (
+            ) : (teams.length === 0 && projects.length === 0) ? (
                 <Box sx={{ textAlign: 'center', py: 10, color: 'text.disabled' }}>
-                    <Typography variant="body1">No hay equipos asignados</Typography>
+                    <Typography variant="body1">No hay equipos ni proyectos asignados</Typography>
                 </Box>
             ) : (
                 <>
-                    <TeamSection title="Equipos Organizativos" items={teams} />
-                    <TeamSection title="Proyectos" items={projects} />
+                    <TeamSection title="Equipos Organizativos" items={teams} type="team" />
+                    <TeamSection title="Proyectos Tácticos" items={projects} type="project" />
                 </>
             )}
         </Box>

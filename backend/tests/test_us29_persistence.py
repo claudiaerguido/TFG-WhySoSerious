@@ -1,7 +1,8 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db_supabase import save_risk_metrics, get_supabase_client
+from db_client import get_supabase_client
+from repositories.risk_repository import save_risk_metrics
 from datetime import datetime
 
 def test_persistence():

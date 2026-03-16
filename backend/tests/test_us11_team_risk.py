@@ -1,7 +1,7 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db_supabase import get_team_risk_metrics
+from services.risk_service import get_team_global_risk
 
 def test_team_risk():
     print("--- Probando Indicador de Riesgo por Equipo (US11) ---")
@@ -10,7 +10,7 @@ def test_team_risk():
     print(f"Consultando riesgo agrupado para team_id={team_id} en los últimos {days} días (llamada RPC directa)...")
     
     try:
-        res = get_team_risk_metrics(team_id, days)
+        res = get_team_global_risk(team_id, days)
         if "error" in res:
             print(f" ERROR en la consulta de riesgo: {res['error']}")
         else:

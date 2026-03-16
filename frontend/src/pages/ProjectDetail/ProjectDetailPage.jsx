@@ -11,9 +11,12 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import LockIcon from "@mui/icons-material/Lock";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { useLocation } from "react-router-dom";
 import {
-  fetchWorkspaceRisk, fetchWorkspaceTrend,
-  fetchWorkspaceMembers, fetchWorkspaceMemberRisks, triggerAnalysis, fetchMyWorkspaces
+  fetchTeamRisk, fetchTeamTrend,
+  fetchProjectRisk, fetchProjectTrend,
+  fetchTeamMemberBreakdown,
+  triggerAnalysis, fetchMyTeamsAndProjects
 } from "../../api/backend";
 import RiskCard from "../../components/RiskCard";
 import {
@@ -24,56 +27,95 @@ import "./ProjectDetailPage.css";
 const DAY_OPTIONS = [1, 7, 30, 60];
 const DAY_LABEL = { 1: "Hoy", 7: "7 Días", 30: "30 Días", 60: "60 Días" };
 
-export default function ProjectDetailPage() {
-  const { id } = useParams();
-  const workspaceId = Number(id) || 1;
-  const navigate = useNavigate();
-  const [days, setDays] = useState(7);
-
-  const { data: workspacesData } = useQuery({
-    queryKey: ["myWorkspaces"],
-    queryFn: fetchMyWorkspaces,
+function MemberRiskRow({ member, type, days }) {
+  const [expanded, setExpanded] = useState(false);
+  const { data: breakdown, isLoading } = useQuery({
+    queryKey: ["memberBreakdown", member.email, days],
+    queryFn: () => fetchTeamMemberBreakdown(member.email, days),
+    enabled: expanded && type === "team" && !member.projects, // Solo si el backend no lo incluyó ya
     staleTime: 60_000,
   });
 
-  const wsInfo = workspacesData?.workspaces?.find(w => w.id === workspaceId);
+  const displayBreakdown = member.projects || breakdown || [];
+
+  const pct = type === "team" ? member.global_risk : member.project_risk;
+  const noData = pct === null || pct === undefined;
+  const color = noData ? "#6b7280" : pct >= 35 ? "#ef4444" : pct >= 20 ? "#f59e0b" : "#22c55e";
+
+  return (
+    <Card sx={{ bgcolor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, boxShadow: "none" }}>
+      <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="body2" fontWeight={700} color="text.primary">
+            {member.display_name || member.alias}
+          </Typography>
+          <Typography variant="caption" color="text.disabled">{type === "team" ? "Riesgo Global" : "Riesgo Táctico"}</Typography>
+        </Box>
+        <Box sx={{ width: 120 }}>
+          <LinearProgress variant="determinate" value={pct ?? 0} sx={{ height: 4, borderRadius: 2, bgcolor: "rgba(255,255,255,0.05)", "& .MuiLinearProgress-bar": { bgcolor: color } }} />
+        </Box>
+        <Typography variant="body2" fontWeight={800} sx={{ color, minWidth: 45, textAlign: "right" }}>
+          {noData ? "—" : `${pct}%`}
+        </Typography>
+        {type === "team" && (
+          <Button size="small" variant="text" color="inherit" onClick={() => setExpanded(!expanded)} sx={{ minWidth: 32, p: 0.5, color: "text.secondary" }}>
+            <ExpandMoreIcon sx={{ transform: expanded ? "rotate(180deg)" : "none", transition: "0.2s" }} />
+          </Button>
+        )}
+      </Box>
+
+      {expanded && type === "team" && (
+        <Box sx={{ px: 2, pb: 2, pt: 1, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+          <Typography variant="caption" color="text.disabled" fontWeight={700} sx={{ mb: 1, display: "block" }}>
+            DESGLOSE POR PROYECTO
+          </Typography>
+          {isLoading ? <LinearProgress sx={{ mt: 1 }} /> : displayBreakdown.length === 0 ? (
+            <Typography variant="caption" color="text.disabled">Sin proyectos activos en este periodo.</Typography>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {displayBreakdown.map(p => (
+                <Box key={p.project_id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Typography variant="caption" color="text.primary">{p.project_name}</Typography>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: p.project_risk >= 20 ? "#f59e0b" : "#22c55e" }}>
+                    {p.project_risk === null || p.project_risk === undefined ? "—" : `${p.project_risk}%`}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+    </Card>
+  );
+}
+
+export default function ProjectDetailPage() {
+  const { id } = useParams();
+  const itemId = Number(id);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const type = location.pathname.includes("/team/") ? "team" : "project";
+  const [days, setDays] = useState(7);
 
   const riskQuery = useQuery({
-    queryKey: ["workspaceRisk", workspaceId, days],
-    queryFn: () => fetchWorkspaceRisk(workspaceId, days),
+    queryKey: [type === "team" ? "teamRisk" : "projectRisk", itemId, days],
+    queryFn: () => type === "team" ? fetchTeamRisk(itemId, days) : fetchProjectRisk(itemId, days),
     staleTime: 30_000,
-    retry: false,
   });
 
   const trendQuery = useQuery({
-    queryKey: ["workspaceTrend", workspaceId, days],
-    queryFn: () => fetchWorkspaceTrend(workspaceId, days),
+    queryKey: [type === "team" ? "teamTrend" : "projectTrend", itemId, days],
+    queryFn: () => type === "team" ? fetchTeamTrend(itemId, days) : fetchProjectTrend(itemId, days),
     staleTime: 30_000,
-    retry: false,
-  });
-
-  const membersQuery = useQuery({
-    queryKey: ["workspaceMembers", workspaceId],
-    queryFn: () => fetchWorkspaceMembers(workspaceId),
-    staleTime: 120_000,
-    retry: false,
-  });
-
-  const memberRisksQuery = useQuery({
-    queryKey: ["workspaceMemberRisks", workspaceId, days],
-    queryFn: () => fetchWorkspaceMemberRisks(workspaceId, days),
-    staleTime: 30_000,
-    retry: false,
   });
 
   const triggerMutation = useMutation({ mutationFn: triggerAnalysis });
 
   const riskData = riskQuery.data;
   const trendData = trendQuery.data?.trend ?? [];
-  const members = membersQuery.data?.members ?? [];
 
   if (import.meta.env.DEV && riskData) {
-    console.log(`[WorkspaceDetail ${workspaceId}] payload:`, riskData);
+    console.log(`[WorkspaceDetail ${itemId}] payload:`, riskData);
   }
 
   // 403 — acceso denegado
@@ -122,19 +164,19 @@ export default function ProjectDetailPage() {
     <Box className="project-detail-container">
       <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/teams")}
         className="project-detail-back-btn">
-        Volver a Mis Equipos
+        Volver a Equipos y Proyectos
       </Button>
 
-      {/* Header Limpio */}
+      {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={400} sx={{ mb: 1, color: "text.primary" }}>
-          {wsInfo ? wsInfo.name : `Workspace #${workspaceId}`}
+          {type === 'team' ? 'Equipo' : 'Proyecto'} #{itemId}
           <Typography component="span" variant="h5" color="text.secondary" fontWeight={300}>
-            {wsInfo ? ` — ${wsInfo.type === 'team' ? 'Equipo' : 'Proyecto'}` : ""}
+            {type === 'team' ? " — Riesgo Global" : " — Riesgo Táctico"}
           </Typography>
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          {members.length} miembros · {riskData?.sample_size ? `${riskData.sample_size} msjs analizados` : "0 msjs analizados"}
+          {riskData?.members?.length ?? 0} miembros
         </Typography>
       </Box>
 
@@ -174,10 +216,10 @@ export default function ProjectDetailPage() {
         {/* BLOQUE PRINCIPAL: Riesgo Actual */}
         <Box>
           <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5, color: "text.primary" }}>
-            Salud del equipo
+            {type === 'team' ? 'Bienestar Organizativo' : 'Indicador del Proyecto'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Indicador actual por miembros
+            {type === 'team' ? 'Riesgo medio global de los miembros' : 'Influencia del proyecto en el agotamiento'}
           </Typography>
           {riskQuery.isLoading ? (
             <Skeleton variant="rounded" height={200} sx={{ borderRadius: 3 }} />
@@ -185,7 +227,7 @@ export default function ProjectDetailPage() {
             <RiskCard
               riskLevel={level}
               riskScore={riskData?.risk_score_percentage}
-              sampleSize={members.length}
+              sampleSize={riskData?.members?.length ?? 0}
             />
           )}
         </Box>
@@ -227,125 +269,26 @@ export default function ProjectDetailPage() {
 
 
 
-        {/* BLOQUE: Riesgo por miembro */}
+        {/* BLOQUE: Detalle por Miembro */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" fontWeight={700} sx={{ color: "text.primary", mb: 0.5 }}>
-            Riesgo por miembro
+            {type === 'team' ? 'Desglose por Miembro' : 'Riesgo en el Proyecto'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Últimos {days} días · score 0–100 · ordenado por riesgo
+            {type === 'team'
+              ? 'Muestra el riesgo global del empleado y sus proyectos activos'
+              : 'Riesgo contextual del empleado dentro de este proyecto específico'}
           </Typography>
-          <Card sx={{
-            bgcolor: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 3, boxShadow: "none",
-          }}>
-            <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-              {memberRisksQuery.isLoading ? (
-                [1, 2, 3].map(i => <Skeleton key={i} width="100%" height={36} sx={{ mb: 1.2, borderRadius: 2 }} />)
-              ) : (memberRisksQuery.data?.members ?? []).length === 0 ? (
-                <Typography variant="body2" color="text.disabled">Sin datos de miembros.</Typography>
-              ) : (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.4 }}>
-                  {(memberRisksQuery.data?.members ?? []).map((m, idx) => {
-                    const pct = m.risk_score_percentage;
-                    const noData = pct === null || m.message_count === 0;
-                    const color = noData ? "#6b7280"
-                      : pct >= 35 ? "#ef4444"
-                        : pct >= 20 ? "#f59e0b"
-                          : "#22c55e";
-                    const isTop = idx === 0 && !noData && pct >= 20;
-                    return (
-                      <Box key={m.alias} sx={{
-                        display: "grid",
-                        gridTemplateColumns: "160px 1fr auto",
-                        alignItems: "center",
-                        gap: 2,
-                        opacity: noData ? 0.4 : 1,
-                      }}>
-                        {/* Columna izquierda: alias + icono top */}
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, overflow: "hidden" }}>
-                          {isTop && (
-                            <Typography component="span" sx={{ fontSize: 13, lineHeight: 1 }}>⚠️</Typography>
-                          )}
-                          <Typography variant="body2" fontWeight={600} color="text.primary" noWrap>
-                            {m.alias}
-                          </Typography>
-                        </Box>
 
-                        {/* Columna centro: barra */}
-                        {noData ? (
-                          <Typography variant="caption" color="text.disabled" sx={{ fontStyle: "italic" }}>
-                            Sin mensajes en el periodo
-                          </Typography>
-                        ) : (
-                          <Box sx={{ maxWidth: 320 }}>
-                            <LinearProgress
-                              variant="determinate"
-                              value={pct ?? 0}
-                              sx={{
-                                height: 3,
-                                borderRadius: 3,
-                                bgcolor: "rgba(255,255,255,0.06)",
-                                "& .MuiLinearProgress-bar": { bgcolor: color, borderRadius: 3 },
-                              }}
-                            />
-                          </Box>
-                        )}
-
-                        {/* Columna derecha: % en color + msgs en gris */}
-                        <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5, minWidth: 120, justifyContent: "flex-end" }}>
-                          <Typography variant="body2" fontWeight={700} sx={{ color }}>
-                            {noData ? "—" : `${pct}%`}
-                          </Typography>
-                          {!noData && (
-                            <Typography variant="caption" color="text.disabled">
-                              · {m.message_count} msgs
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-
-        {/* BLOQUE: Miembros incluidos */}
-        <Box>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
-            <Typography variant="subtitle1" fontWeight={600} sx={{ color: "text.primary", letterSpacing: 0.5 }}>
-              MIEMBROS INCLUIDOS EN ANÁLISIS
-            </Typography>
-            <Typography variant="caption" sx={{ color: "text.disabled" }}>
-              🔒 Solo aliases visualizados
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {membersQuery.isLoading ? (
-              <Skeleton variant="rounded" width="100%" height={40} sx={{ borderRadius: 2 }} />
-            ) : members.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">Sin miembros registrados.</Typography>
-            ) : (
-              members.map((m, i) => (
-                <Box key={i} sx={{
-                  display: "flex", alignItems: "center", gap: 1,
-                  p: 1, px: 1.5,
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  borderRadius: 2,
-                  bgcolor: "rgba(255,255,255,0.01)"
-                }}>
-                  <Typography variant="body2" color="text.primary" fontWeight={500}>
-                    {m.alias}
-                  </Typography>
-                  <Chip label="Incluido" size="small" sx={{ height: 18, fontSize: 10, bgcolor: "rgba(16,185,129,0.1)", color: "#10b981", border: "none" }} />
-                </Box>
-              ))
-            )}
-          </Box>
+          {riskQuery.isLoading ? (
+            <Skeleton variant="rounded" height={200} sx={{ borderRadius: 2 }} />
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {(riskData?.members ?? []).map((m) => (
+                <MemberRiskRow key={m.alias} member={m} type={type} days={days} />
+              ))}
+            </Box>
+          )}
         </Box>
 
         {/* BLOQUE: Metodología plegable */}
@@ -365,7 +308,11 @@ export default function ProjectDetailPage() {
           </AccordionSummary>
           <AccordionDetails sx={{ px: 0, pb: 4, pt: 0 }}>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, maxWidth: 900 }}>
-              Nuestro modelo procesa los mensajes codificados del equipo usando transformadores lingüísticos (base RoBERTa), clasificando el texto de forma estructural en diferentes dimensiones emocionales. El algoritmo de <strong>Ponderación Dinámica</strong> evalúa cómo interactúan y qué gravedad implican estas emociones, devolviendo un Índice de Riesgo global. Todo el proceso es "Privacy by Design" y anonimizado en origen.
+              {type === 'team'
+                ? "El riesgo global del equipo se calcula como la media de los niveles de estrés detectados en las comunicaciones de sus miembros en todos sus contextos de trabajo. Es un indicador de bienestar general a largo plazo."
+                : "El riesgo táctico del proyecto evalúa específicamente cómo los mensajes intercambiados dentro de este proyecto afectan al agotamiento de los participantes, permitiendo identificar fricciones en entregas o flujos de trabajo específicos."}
+              <br /><br />
+              Nuestro modelo procesa los mensajes codificados usando transformadores lingüísticos (base RoBERTa), clasificando el texto en dimensiones emocionales. Todo el proceso es "Privacy by Design" y anonimizado en origen.
             </Typography>
           </AccordionDetails>
         </Accordion>
