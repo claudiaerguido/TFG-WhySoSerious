@@ -16,9 +16,10 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/final_teams")
 THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "thresholds_phaseB.json")
 
 # Modelo Baseline (Sentimiento Original - Estrellas)
-# Este modelo clasifica el texto en una escala de 1 a 5 estrellas.
 BASELINE_MODEL_ID = "nlptown/bert-base-multilingual-uncased-sentiment"
-    
+
+# Etiquetas del modelo de emociones
+# Nota: TRISTEZA es informativa y no se usa para el cálculo del riesgo táctico.
 LABELS = ["TRISTEZA", "ESTRES_ANSIEDAD", "ENFADO_IRRITACION", "SOBRECARGA_URGENCIA", "CANSANCIO_FATIGA", "POSITIVO_ALIVIO", "NEUTRO"]
 
 class NLPModel:
@@ -39,71 +40,84 @@ class NLPModel:
         except Exception as e:
             print(f"⚠️ Error cargando modelo de emociones: {e}")
 
-        # 2. Carga del modelo baseline (Sentiento Original de Estrellas)
-        print(f"🔄 Cargando modelo Baseline (Sentimiento) [{BASELINE_MODEL_ID}]...")
+        # 2. Carga del modelo baseline (Estrellas)
         self.base_tokenizer = None
         self.base_model = None
         try:
             self.base_tokenizer = AutoTokenizer.from_pretrained(BASELINE_MODEL_ID)
             self.base_model = AutoModelForSequenceClassification.from_pretrained(BASELINE_MODEL_ID)
             self.base_model.eval()
-            print("✅ Modelo Baseline cargado correctamente.")
+            print("✅ Modelo Baseline cargado.")
         except Exception as e:
-            print(f"⚠️ Error cargando modelo baseline: {e}")
+            print(f"⚠️ Error cargando baseline: {e}")
 
-    def load_thresholds(self):
-        """Carga los umbrales dinámicos para el modelo de emociones."""
-        default_thresholds = {label: 0.5 for label in LABELS}
+        # 3. Carga de umbrales dinámicos (una sola vez)
+        self.thresholds = self._load_thresholds()
+
+    def _load_thresholds(self):
+        """Carga los umbrales dinámicos desde el archivo config."""
+        default = {l: 0.5 for l in LABELS}
         try:
             if os.path.exists(THRESHOLDS_PATH):
                 with open(THRESHOLDS_PATH, 'r') as f:
                     return json.load(f)
-            return default_thresholds
-        except Exception as e:
-            print(f"⚠️ Error leyendo thresholds.json: {e}")
-            return default_thresholds
+            return default
+        except Exception:
+            return default
 
     def predict(self, text: str):
-        """Realiza la predicción multilabel de emociones."""
-        thresholds = self.load_thresholds()
+        """Predicción multilabel de emociones."""
         if not self.model or not self.tokenizer:
-            return {"labels": {l: 0.0 for l in LABELS}, "thresholds": thresholds, "is_fallback": True, "detected_labels": []}
+            return self._get_fallback_predict()
 
         try:
             inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=128, padding=True)
             with torch.no_grad():
                 outputs = self.model(**inputs)
-                logits = outputs.logits.numpy()[0]
+                # Conversión robusta de tensores
+                logits = outputs.logits.detach().cpu().numpy()[0]
             
-            # Sigmoide para probabilidades independientes (multilabel)
+            # Sigmoide para probabilidades independientes
             probs = 1 / (1 + np.exp(-logits)) 
             
             results = {}
             flags = []
             for i, label in enumerate(LABELS):
-                probability = float(probs[i])
-                results[label] = probability
-                if probability >= thresholds.get(label, 0.5):
+                prob = float(probs[i])
+                results[label] = prob
+                if prob >= self.thresholds.get(label, 0.5):
                     flags.append(label)
 
-            return {"labels": results, "thresholds": thresholds, "is_fallback": False, "detected_labels": flags}
+            return {
+                "labels": results, 
+                "thresholds": self.thresholds, 
+                "is_fallback": False, 
+                "detected_labels": flags
+            }
         except Exception as e:
-            print(f"Error en predict: {e}")
-            return {"labels": {l: 0.0 for l in LABELS}, "thresholds": thresholds, "is_fallback": True, "detected_labels": []}
+            print(f"❌ Error en predict: {e}")
+            return self._get_fallback_predict()
+
+    def _get_fallback_predict(self):
+        """Devuelve un resultado neutro si falla la inferencia."""
+        return {
+            "labels": {l: 0.0 for l in LABELS},
+            "thresholds": getattr(self, "thresholds", {}),
+            "is_fallback": True,
+            "detected_labels": []
+        }
 
     def predict_sentiment(self, text: str):
-        """Realiza la predicción de sentimiento original (1-5 estrellas)."""
+        """Predicción de sentimiento baseline (1-5 estrellas)."""
         if not self.base_model or not self.base_tokenizer:
-            return {"label": "Error", "score": 0.0}
+            return {"label": "Error", "score": 0.0, "stars": 0}
         
         try:
             inputs = self.base_tokenizer(text, return_tensors="pt", truncation=True, max_length=128, padding=True)
             with torch.no_grad():
                 outputs = self.base_model(**inputs)
-                # Softmax para clases mutuamente excluyentes (estrellas)
-                probs = torch.nn.functional.softmax(outputs.logits, dim=-1).numpy()[0]
+                probs = torch.nn.functional.softmax(outputs.logits, dim=-1).detach().cpu().numpy()[0]
             
-            # El modelo nlptown devuelve 5 clases: [1 star, 2 stars, 3 stars, 4 stars, 5 stars]
             idx = np.argmax(probs)
             star_labels = ["1 estrella", "2 estrellas", "3 estrellas", "4 estrellas", "5 estrellas"]
             
@@ -113,8 +127,8 @@ class NLPModel:
                 "stars": int(idx + 1)
             }
         except Exception as e:
-            print(f"Error en predict_sentiment: {e}")
-            return {"label": "Error", "score": 0.0}
+            print(f"❌ Error en predict_sentiment: {e}")
+            return {"label": "Error", "score": 0.0, "stars": 0}
 
 # Instancia global del servicio
 nlp_service = NLPModel()

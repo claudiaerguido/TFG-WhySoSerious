@@ -86,6 +86,54 @@ export async function fetchTeamMemberBreakdown(userEmail, days = 7) {
     return res.json();
 }
 
+// ── Gestión de Proyectos (US-20) ───────────────────────────────
+export async function fetchProjectsCatalog() {
+    const res = await fetch(`${BASE_URL}/api/projects/catalog`, { credentials: "include" });
+    if (!res.ok) throw new Error("Error al obtener catálogo de proyectos");
+    return res.json();
+}
+
+export async function addProjectMember(userEmail, projectId) {
+    const res = await fetch(`${BASE_URL}/api/project/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_email: userEmail, project_id: projectId }),
+        credentials: "include"
+    });
+    if (!res.ok) throw new Error("Error al añadir miembro al proyecto");
+    return res.json();
+}
+
+export async function removeProjectMember(userEmail, projectId) {
+    const res = await fetch(
+        `${BASE_URL}/api/project/members?user_email=${encodeURIComponent(userEmail)}&project_id=${projectId}`,
+        { method: "DELETE", credentials: "include" }
+    );
+    if (!res.ok) throw new Error("Error al eliminar miembro del proyecto");
+    return res.json();
+}
+
+// ── Empleados (US-36) ──────────────────────────────────────────
+export async function fetchEmployeeProfile(userEmail, days = 7) {
+    const res = await fetch(
+        `${BASE_URL}/api/employee/profile?user_email=${encodeURIComponent(userEmail)}&days=${days}`,
+        { credentials: "include" }
+    );
+    if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
+    if (!res.ok) throw new Error("Error al obtener perfil del empleado");
+    return res.json();
+}
+
+export async function fetchEmployeeTrend(userEmail, days = 30) {
+    const res = await fetch(
+        `${BASE_URL}/api/employee/trend?user_email=${encodeURIComponent(userEmail)}&days=${days}`,
+        { credentials: "include" }
+    );
+    if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
+    if (!res.ok) throw new Error("Error al obtener tendencia del empleado");
+    return res.json();
+}
+
 export async function fetchWorkspaceRisk(workspaceId, days = 7) {
     const res = await fetch(
         `${BASE_URL}/api/workspace/risk?workspace_id=${workspaceId}&days=${days}`,

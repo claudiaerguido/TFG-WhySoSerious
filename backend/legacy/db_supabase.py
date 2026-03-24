@@ -22,12 +22,12 @@ from services.permissions_service import (
 )
 from services.risk_service import (
     get_employee_global_risk, get_employee_project_risk,
-    get_team_global_risk, get_project_global_risk,
+    get_team_global_risk, get_project_tactical_risk as get_project_global_risk,
     get_team_risk_trend, get_member_projects_breakdown,
     get_project_risk_trend, get_project_members_list as get_project_members,
-    get_all_workspaces_with_members as get_all_teams_and_projects_with_members
+    get_all_teams_and_projects_with_members as get_all_workspaces_with_members
 )
-from services.legacy_service import (
+from legacy_service import (
     get_workspace_risk_metrics, get_workspace_member_risks
 )
 
@@ -41,5 +41,5 @@ def _fetch_project_emails(supabase, project_id: int):
     return [m["user_email"] for m in fetch_project_members(supabase, project_id)]
 
 def _fetch_workspace_emails(supabase, workspace_id: int):
-    from services.legacy_service import _fetch_workspace_emails as _fwe
+    from legacy.legacy_service import _fetch_workspace_emails as _fwe
     return _fwe(supabase, workspace_id)

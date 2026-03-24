@@ -1,9 +1,11 @@
-from typing import List, Dict, Any, Optional
-from supabase import Client
+from typing import List, Dict, Any
 from db_client import get_supabase_client
 
 def ensure_org_user(email: str, display_name: str) -> None:
-    """Asegura que un usuario existe en la tabla org_users."""
+    """
+    Asegura la existencia del usuario en la tabla 'org_users'.
+    Se ejecuta tras el login exitoso via Microsoft Graph.
+    """
     supabase = get_supabase_client()
     if not supabase or not email: return
     try:
@@ -15,9 +17,10 @@ def ensure_org_user(email: str, display_name: str) -> None:
     except Exception as e:
         print(f"⚠️ ensure_org_user error: {e}")
 
-
 def get_user_role(email: str) -> str:
-    """Devuelve el rol del usuario ('admin'|'manager'|'employee')."""
+    """
+    Recupera el rol administrativo del usuario ('admin'|'manager'|'employee').
+    """
     supabase = get_supabase_client()
     if not supabase or not email: return "employee"
     try:
@@ -27,32 +30,31 @@ def get_user_role(email: str) -> str:
         print(f"⚠️ get_user_role error: {e}")
         return "employee"
 
-
 def get_teams_and_projects_for_user(email: str, role: str) -> Dict[str, List[Dict[str, Any]]]:
     """
-    Define la visibilidad de dashboards según rol y responsabilidad:
-    - admin/manager → ve todo.
-    - employee      → ve solo donde es responsable directo (Manager de equipo u Owner de proyecto).
+    Implementa el modelo de visibilidad basado en responsabilidad (RBAC):
+    - 'admin': Visibilidad global de la organización.
+    - 'manager'/'employee': Visibilidad limitada a entidades bajo su gestión directa
+      (donde figura como 'manager_email' en equipos u 'owner_email' en proyectos).
     """
     supabase = get_supabase_client()
     if not supabase: return {"teams": [], "projects": []}
     
     try:
-        if role in ["admin", "manager"]:
-            res_teams = supabase.table("teams").select("id, name").execute()
-            res_projects = supabase.table("projects").select("id, name").execute()
-            return {
-                "teams": res_teams.data or [],
-                "projects": res_projects.data or []
-            }
+        # 1. Acceso de administrador: total
+        if role == "admin":
+            res_t = supabase.table("teams").select("id, name").execute()
+            res_p = supabase.table("projects").select("id, name").execute()
+            return {"teams": res_t.data or [], "projects": res_p.data or []}
         
-        # Filtrado estricto por responsabilidad para empleados
-        res_teams = supabase.table("teams").select("id, name").eq("manager_email", email).execute()
-        res_projects = supabase.table("projects").select("id, name").eq("owner_email", email).execute()
+        # 2. Acceso por responsabilidad (Managers y Employees)
+        # Un Manager funcional solo ve lo que gestiona, no toda la empresa.
+        res_t = supabase.table("teams").select("id, name").eq("manager_email", email).execute()
+        res_p = supabase.table("projects").select("id, name").eq("owner_email", email).execute()
         
         return {
-            "teams": res_teams.data or [], 
-            "projects": res_projects.data or []
+            "teams": res_t.data or [], 
+            "projects": res_p.data or []
         }
     except Exception as e:
         print(f"⚠️ get_teams_and_projects_for_user error: {e}")

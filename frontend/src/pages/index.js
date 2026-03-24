@@ -5,3 +5,4 @@ export { default as ProjectDetailPage } from './ProjectDetail/ProjectDetailPage'
 
 export { default as TeamsPage } from './Teams/TeamsPage';
 export { default as ProfilePage } from './Profile/ProfilePage';
+export { default as EmployeeProfilePage } from './EmployeeProfile/EmployeeProfilePage';

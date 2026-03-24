@@ -13,6 +13,7 @@ import {
   TeamsPage,
   ProjectDetailPage,
   ProfilePage,
+  EmployeeProfilePage,
 } from "./pages";
 import { useMe } from "./context/AuthContext";
 
@@ -56,6 +57,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                 <Route path="/project/:id" element={<ProjectDetailPage />} />
                 <Route path="/workspaces/:id" element={<ProjectDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/employee/:email" element={<EmployeeProfilePage />} />
               </Route>
               {/* Redirección para rutas no encontradas y evitar pantallas blancas */}
               <Route path="*" element={<Navigate to="/" replace />} />

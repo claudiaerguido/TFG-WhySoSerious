@@ -22,8 +22,7 @@ backend/
   │
   ├── services/              # Capa de servicios (Lógica de negocio)
   │   ├── risk_service.py    # Cálculo de métricas, tendencias y desgloses
-  │   ├── permissions_service.py # Control de acceso y visibilidad por rol
-  │   └── legacy_service.py  # Compatibilidad con el modelo de workspaces
+  │   └── permissions_service.py # Control de acceso y visibilidad por rol
   │
   ├── scripts/               # Herramientas auxiliares y mantenimiento
   │   ├── debug/             # Diagnóstico de esquema y equipos
@@ -31,7 +30,7 @@ backend/
   │   ├── maintenance/       # Backups y limpieza de registros
   │   └── training/          # Entrenamiento y evaluación de modelos NLP
   │
-  ├── legacy/                # Archivo de componentes obsoletos (db_supabase.py)
+  ├── legacy/                # Archivo de componentes obsoletos (db_supabase.py, legacy_service.py)
   ├── logs/                  # Almacenamiento centralizado de trazas (.log)
   └── tests/                 # Pruebas unitarias e integración
 ```

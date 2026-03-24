@@ -36,7 +36,7 @@ El backend está desarrollado en Python usando FastAPI. Sigue estos pasos abrien
    ```
 4. **Inicia el servidor de desarrollo:**
 
-   ```bash
+   ```
    uporqu
 
    ```

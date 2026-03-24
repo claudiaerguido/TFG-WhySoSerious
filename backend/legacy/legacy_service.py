@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import Dict, List, Any
 from db_client import get_supabase_client
 from logic.risk_model import compute_pearson_msg_risk, _risk_level, DB_COLS, TARGET_LABELS

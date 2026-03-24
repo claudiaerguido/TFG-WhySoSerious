@@ -115,7 +115,7 @@ export default function TeamsPage() {
                     Equipos
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Estado de bienestar por equipo basado en actividad de los últimos 7 días.
+                    Riesgo global del equipo: promedio del riesgo global de sus integrantes.
                 </Typography>
             </Box>
 

@@ -1,0 +1,22 @@
+/* EmployeeProfilePage.css */
+
+/* Reutilizamos los contenedores base del Dashboard */
+@import "../ProjectDetail/ProjectDetailPage.css";
+
+.employee-profile-card {
+    border-radius: 16px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Ajustes específicos para la mini-tabla de proyectos en el perfil */
+.member-table-row {
+    grid-template-columns: 1fr 100px !important;
+    padding: 12px 20px !important;
+}
+
+.member-table-header {
+    grid-template-columns: 1fr 100px !important;
+    padding: 12px 20px !important;
+}

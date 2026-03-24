@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Typography, Card, CardContent, Button, Chip,
   Alert, Skeleton, ToggleButtonGroup, ToggleButton,
-  LinearProgress, Accordion, AccordionSummary, AccordionDetails
+  LinearProgress, Accordion, AccordionSummary, AccordionDetails,
+  Divider, Paper
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -16,71 +17,258 @@ import {
   fetchTeamRisk, fetchTeamTrend,
   fetchProjectRisk, fetchProjectTrend,
   fetchTeamMemberBreakdown,
-  triggerAnalysis, fetchMyTeamsAndProjects
+  triggerAnalysis, fetchMyTeamsAndProjects,
+  fetchProjectsCatalog, addProjectMember, removeProjectMember
 } from "../../api/backend";
+import { useMe } from "../../context/AuthContext";
 import RiskCard from "../../components/RiskCard";
-import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip
-} from "recharts";
+import IconButton from "@mui/material/IconButton";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import { MenuItem, Select, FormControl } from "@mui/material";
+import RiskTrendChart from "../../components/RiskTrendChart";
 import "./ProjectDetailPage.css";
 
 const DAY_OPTIONS = [1, 7, 30, 60];
-const DAY_LABEL = { 1: "Hoy", 7: "7 Días", 30: "30 Días", 60: "60 Días" };
+const DAY_LABEL = { 1: "Últimas 24h", 7: "7 Días", 30: "30 Días", 60: "60 Días" };
 
 function MemberRiskRow({ member, type, days }) {
+  const { id: teamId } = useParams();
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const [selectedProject, setSelectedProject] = useState("");
+  const { user } = useMe();
+  const queryClient = useQueryClient();
+
+  const memberEmail = member.email || member.user_email;
+  const canManage = user?.role === "admin" || (user?.role === "manager" && type === "team");
+
   const { data: breakdown, isLoading } = useQuery({
-    queryKey: ["memberBreakdown", member.email, days],
-    queryFn: () => fetchTeamMemberBreakdown(member.email, days),
-    enabled: expanded && type === "team" && !member.projects, // Solo si el backend no lo incluyó ya
+    queryKey: ["memberBreakdown", memberEmail, days],
+    queryFn: () => fetchTeamMemberBreakdown(memberEmail, days),
+    enabled: expanded && type === "team" && !member.projects,
     staleTime: 60_000,
   });
 
-  const displayBreakdown = member.projects || breakdown || [];
+  const { data: catalog } = useQuery({
+    queryKey: ["projectsCatalog"],
+    queryFn: fetchProjectsCatalog,
+    enabled: expanded && canManage,
+    staleTime: 300_000,
+  });
 
+  const addMutation = useMutation({
+    mutationFn: (pid) => addProjectMember(memberEmail, pid),
+    onSuccess: () => {
+      const numericId = Number(teamId);
+      queryClient.invalidateQueries({ queryKey: ["memberBreakdown", memberEmail, days] });
+      queryClient.invalidateQueries({ queryKey: ["teamRisk", numericId, days] });
+      setSelectedProject("");
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (pid) => removeProjectMember(memberEmail, pid),
+    onSuccess: () => {
+      const numericId = Number(teamId);
+      queryClient.invalidateQueries({ queryKey: ["memberBreakdown", memberEmail, days] });
+      queryClient.invalidateQueries({ queryKey: ["teamRisk", numericId, days] });
+    },
+  });
+
+  const displayBreakdown = member.projects || breakdown || [];
   const pct = type === "team" ? member.global_risk : member.project_risk;
   const noData = pct === null || pct === undefined;
-  const color = noData ? "#6b7280" : pct >= 35 ? "#ef4444" : pct >= 20 ? "#f59e0b" : "#22c55e";
+
+  const color = noData
+    ? "#94a3b8"
+    : pct >= 35
+      ? "#ef4444"
+      : pct >= 20
+        ? "#f59e0b"
+        : "#22c55e";
 
   return (
-    <Card sx={{ bgcolor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, boxShadow: "none" }}>
-      <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="body2" fontWeight={700} color="text.primary">
-            {member.display_name || member.alias}
+    <Card className="member-card">
+      {/* Cabecera */}
+      <Box className="member-card-header">
+        <Box className="member-area">
+          <Box className="member-name-row">
+            <Typography
+              variant="subtitle1"
+              className="member-name-text"
+              sx={{ cursor: "pointer", "&:hover": { color: "#4f46e5" } }}
+              onClick={() => navigate(`/employee/${memberEmail}`)}
+            >
+              {member.display_name || member.alias}
+            </Typography>
+
+            {member.role !== "employee" && (
+              <Chip
+                label={member.role === "manager" ? "Manager" : "Admin"}
+                size="small"
+                className="member-chip-role"
+              />
+            )}
+          </Box>
+
+          <Typography variant="body2" className="member-risk-label">
+            {type === "team" ? "Riesgo global" : "Riesgo táctico"}
+            {member.role !== "employee" ? " · Excluido de la media" : ""}
           </Typography>
-          <Typography variant="caption" color="text.disabled">{type === "team" ? "Riesgo Global" : "Riesgo Táctico"}</Typography>
         </Box>
-        <Box sx={{ width: 120 }}>
-          <LinearProgress variant="determinate" value={pct ?? 0} sx={{ height: 4, borderRadius: 2, bgcolor: "rgba(255,255,255,0.05)", "& .MuiLinearProgress-bar": { bgcolor: color } }} />
+
+        <Box className="member-risk-visuals">
+          <Box className="member-progress-container">
+            <LinearProgress
+              variant="determinate"
+              value={pct ?? 0}
+              className="member-progress-bar"
+              sx={{ "& .MuiLinearProgress-bar": { bgcolor: color } }}
+            />
+          </Box>
+
+          <Typography
+            variant="subtitle1"
+            className="member-risk-pct"
+            sx={{ color }}
+          >
+            {noData ? "—" : `${pct}%`}
+          </Typography>
+
+          {(type === "team" || displayBreakdown.length > 0) && (
+            <IconButton
+              size="small"
+              onClick={() => setExpanded(!expanded)}
+              className="member-expand-btn"
+            >
+              <ExpandMoreIcon
+                sx={{
+                  transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "0.2s ease",
+                }}
+              />
+            </IconButton>
+          )}
         </Box>
-        <Typography variant="body2" fontWeight={800} sx={{ color, minWidth: 45, textAlign: "right" }}>
-          {noData ? "—" : `${pct}%`}
-        </Typography>
-        {type === "team" && (
-          <Button size="small" variant="text" color="inherit" onClick={() => setExpanded(!expanded)} sx={{ minWidth: 32, p: 0.5, color: "text.secondary" }}>
-            <ExpandMoreIcon sx={{ transform: expanded ? "rotate(180deg)" : "none", transition: "0.2s" }} />
-          </Button>
-        )}
       </Box>
 
-      {expanded && type === "team" && (
-        <Box sx={{ px: 2, pb: 2, pt: 1, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-          <Typography variant="caption" color="text.disabled" fontWeight={700} sx={{ mb: 1, display: "block" }}>
-            DESGLOSE POR PROYECTO
+      {/* Detalle desplegable */}
+      {expanded && (
+        <Box className="member-detail-area">
+          <Divider className="member-detail-divider" />
+
+          <Typography
+            variant="caption"
+            className="member-detail-title"
+          >
+            Proyectos asociados
           </Typography>
-          {isLoading ? <LinearProgress sx={{ mt: 1 }} /> : displayBreakdown.length === 0 ? (
-            <Typography variant="caption" color="text.disabled">Sin proyectos activos en este periodo.</Typography>
+
+          {isLoading ? (
+            <LinearProgress sx={{ borderRadius: 999, mb: 2 }} className="member-detail-loader" />
+          ) : displayBreakdown.length === 0 ? (
+            <Paper
+              variant="outlined"
+              className="member-no-data-paper"
+            >
+              <Typography variant="body2" sx={{ color: "#64748b" }}>
+                Sin proyectos activos en este periodo.
+              </Typography>
+            </Paper>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {displayBreakdown.map(p => (
-                <Box key={p.project_id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Typography variant="caption" color="text.primary">{p.project_name}</Typography>
-                  <Typography variant="caption" fontWeight={700} sx={{ color: p.project_risk >= 20 ? "#f59e0b" : "#22c55e" }}>
-                    {p.project_risk === null || p.project_risk === undefined ? "—" : `${p.project_risk}%`}
-                  </Typography>
-                </Box>
-              ))}
+            <Box className="member-table">
+              {/* Cabecera mini tabla */}
+              <Box className="member-table-header">
+                <Typography variant="caption" className="member-table-header-cell">
+                  Proyecto
+                </Typography>
+                <Typography variant="caption" className="member-table-header-cell" align="right">
+                  Riesgo
+                </Typography>
+                <Typography variant="caption" className="member-table-header-cell" align="center">
+                  Acción
+                </Typography>
+              </Box>
+
+              {/* Filas */}
+              {displayBreakdown.map((p, idx) => {
+                const projectRisk = p.project_risk;
+                const projectColor =
+                  projectRisk === null || projectRisk === undefined
+                    ? "#94a3b8"
+                    : projectRisk >= 35
+                      ? "#ef4444"
+                      : projectRisk >= 20
+                        ? "#f59e0b"
+                        : "#22c55e";
+
+                return (
+                  <Box
+                    key={p.project_id}
+                    className="member-table-row"
+                  >
+                    <Typography variant="body2" className="member-project-name">
+                      {p.project_name}
+                    </Typography>
+
+                    <Typography
+                      variant="body2"
+                      className="member-project-risk"
+                      sx={{ color: projectColor }}
+                    >
+                      {projectRisk === null || projectRisk === undefined ? "—" : `${projectRisk}%`}
+                    </Typography>
+
+                    <Box className="member-project-action">
+                      {canManage && (
+                        <IconButton
+                          size="small"
+                          onClick={() => removeMutation.mutate(p.project_id)}
+                          sx={{ color: "#ef4444" }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      )}
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
+
+          {/* Añadir proyecto */}
+          {canManage && catalog && (
+            <Box className="member-add-area">
+              <FormControl size="small" sx={{ minWidth: 240 }}>
+                <Select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  displayEmpty
+                  className="member-add-select"
+                >
+                  <MenuItem value="" disabled>
+                    Seleccionar proyecto…
+                  </MenuItem>
+                  {catalog
+                    .filter((p) => !displayBreakdown.some((dp) => dp.project_id === p.id))
+                    .map((p) => (
+                      <MenuItem key={p.id} value={p.id}>
+                        {p.name}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                disabled={!selectedProject || addMutation.isPending}
+                onClick={() => addMutation.mutate(selectedProject)}
+                className="member-add-btn"
+              >
+                Añadir
+              </Button>
             </Box>
           )}
         </Box>
@@ -136,21 +324,6 @@ export default function ProjectDetailPage() {
 
   const level = riskData?.risk_level;
 
-  // Custom Tooltip for Recharts
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <Box className="project-detail-tooltip">
-          <Typography variant="caption" color="text.secondary">{label}</Typography>
-          <Typography variant="body2" fontWeight={700} sx={{ color: "#818cf8" }}>
-            Riesgo: {payload[0].value}%
-          </Typography>
-        </Box>
-      );
-    }
-    return null;
-  }
-
   // Trend variation
   let variationText = "—";
   if (trendData.length > 1) {
@@ -176,7 +349,7 @@ export default function ProjectDetailPage() {
           </Typography>
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          {riskData?.members?.length ?? 0} miembros
+          {riskData?.members?.filter(m => m.role === 'employee').length ?? 0} integrantes analizados
         </Typography>
       </Box>
 
@@ -219,7 +392,9 @@ export default function ProjectDetailPage() {
             {type === 'team' ? 'Bienestar Organizativo' : 'Indicador del Proyecto'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {type === 'team' ? 'Riesgo medio global de los miembros' : 'Influencia del proyecto en el agotamiento'}
+            {type === 'team'
+              ? 'Riesgo global del equipo: promedio del riesgo global de sus integrantes.'
+              : 'Riesgo táctico del proyecto: promedio del riesgo contextual de sus integrantes dentro de este proyecto.'}
           </Typography>
           {riskQuery.isLoading ? (
             <Skeleton variant="rounded" height={200} sx={{ borderRadius: 3 }} />
@@ -246,16 +421,8 @@ export default function ProjectDetailPage() {
                   Sin suficientes datos históricos.
                 </Box>
               ) : (
-                <Box sx={{ height: 260 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
-                      <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickMargin={10} minTickGap={30} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#64748b" fontSize={11} tickFormatter={(v) => `${v}%`} domain={[0, 100]} axisLine={false} tickLine={false} />
-                      <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
-                      <Line type="monotone" dataKey="risk_score_percentage" stroke="#818cf8" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "#818cf8", stroke: "#1e293b", strokeWidth: 2 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <Box sx={{ mt: 2 }}>
+                  <RiskTrendChart data={trendData} days={days} />
                 </Box>
               )}
               {trendData.length > 1 && (
@@ -270,47 +437,52 @@ export default function ProjectDetailPage() {
 
 
         {/* BLOQUE: Detalle por Miembro */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ color: "text.primary", mb: 0.5 }}>
-            {type === 'team' ? 'Desglose por Miembro' : 'Riesgo en el Proyecto'}
+        <Box className="member-list-section">
+          <Typography variant="h6" className="member-list-title">
+            Desglose por Miembro
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {type === 'team'
-              ? 'Muestra el riesgo global del empleado y sus proyectos activos'
-              : 'Riesgo contextual del empleado dentro de este proyecto específico'}
+          <Typography
+            variant="body2"
+            className="member-list-subtitle"
+          >
+            Riesgo total del empleado a través de todos sus proyectos activos.
           </Typography>
 
           {riskQuery.isLoading ? (
             <Skeleton variant="rounded" height={200} sx={{ borderRadius: 2 }} />
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {(riskData?.members ?? []).map((m) => (
-                <MemberRiskRow key={m.alias} member={m} type={type} days={days} />
+            <Box className="member-list-container">
+              {/* Sección de Managers (si es equipo) */}
+              {type === "team" && (riskData?.members ?? []).filter(m => m.role !== 'employee').map(m => (
+                <Box key={m.email} sx={{ mb: 1 }}>
+                  <Typography variant="caption" color="text.disabled" sx={{ ml: 1, mb: 0.5, display: "block", fontWeight: 700 }}>RESPONSABLE / GESTIÓN</Typography>
+                  <MemberRiskRow member={m} type={type} days={days} />
+                </Box>
+              ))}
+
+              {/* Sección de Empleados */}
+              {(riskData?.members ?? []).filter(m => m.role === 'employee').map((m) => (
+                <MemberRiskRow key={m.email} member={m} type={type} days={days} />
               ))}
             </Box>
           )}
         </Box>
 
         {/* BLOQUE: Metodología plegable */}
-        <Accordion sx={{
-          bgcolor: "transparent",
-          boxShadow: "none",
-          "&:before": { display: "none" },
-          mt: 2
-        }}>
+        <Accordion className="methodology-accordion">
           <AccordionSummary
             expandIcon={<ExpandMoreIcon sx={{ color: "text.secondary" }} />}
-            sx={{ px: 0, minHeight: 48, "& .MuiAccordionSummary-content": { my: 0 } }}
+            className="methodology-summary"
           >
-            <Typography variant="body2" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="body2" color="text.secondary" className="methodology-summary-text">
               <InfoOutlinedIcon fontSize="small" /> ¿Cómo se calcula el riesgo?
             </Typography>
           </AccordionSummary>
-          <AccordionDetails sx={{ px: 0, pb: 4, pt: 0 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, maxWidth: 900 }}>
+          <AccordionDetails className="methodology-details">
+            <Typography variant="body2" color="text.secondary" className="methodology-details-text">
               {type === 'team'
-                ? "El riesgo global del equipo se calcula como la media de los niveles de estrés detectados en las comunicaciones de sus miembros en todos sus contextos de trabajo. Es un indicador de bienestar general a largo plazo."
-                : "El riesgo táctico del proyecto evalúa específicamente cómo los mensajes intercambiados dentro de este proyecto afectan al agotamiento de los participantes, permitiendo identificar fricciones en entregas o flujos de trabajo específicos."}
+                ? "El riesgo global del equipo se calcula como la media de los niveles de estrés detectados en las comunicaciones de sus miembros operativos (employees). Los perfiles de gestión (managers/admins) se muestran para visibilidad pero no afectan al promedio del equipo para evitar sesgos."
+                : "El riesgo táctico del proyecto evalúa específicamente cómo los mensajes intercambiados dentro de este proyecto afectan al bienestar de los participantes, permitiendo identificar fricciones en entregas o flujos de trabajo específicos."}
               <br /><br />
               Nuestro modelo procesa los mensajes codificados usando transformadores lingüísticos (base RoBERTa), clasificando el texto en dimensiones emocionales. Todo el proceso es "Privacy by Design" y anonimizado en origen.
             </Typography>
