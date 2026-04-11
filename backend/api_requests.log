@@ -1,0 +1,4 @@
+2026-04-07T10:44:03.787243 - HEAD /health - Status: 405
+2026-04-07T10:46:16.986848 - GET /api/me - Status: 200
+2026-04-07T10:46:16.996712 - GET /api/me - Status: 200
+2026-04-07T10:46:17.031875 - GET /api/my/workspaces - Status: 200

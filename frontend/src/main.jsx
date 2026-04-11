@@ -53,6 +53,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <Route element={<RequireAuth><AppShell /></RequireAuth>}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/teams" element={<TeamsPage />} />
+                <Route path="/projects" element={<TeamsPage />} />
                 <Route path="/team/:id" element={<ProjectDetailPage />} />
                 <Route path="/project/:id" element={<ProjectDetailPage />} />
                 <Route path="/workspaces/:id" element={<ProjectDetailPage />} />

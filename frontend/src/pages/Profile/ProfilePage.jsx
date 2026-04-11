@@ -1,10 +1,12 @@
-import { Box, Typography, Avatar, Chip, Divider, Card, CardContent, Grid } from "@mui/material";
+import { Box, Typography, Avatar, Chip, Divider, Card, CardContent, Grid, TextField, Select, MenuItem, Button, LinearProgress } from "@mui/material";
 import BadgeIcon from "@mui/icons-material/Badge";
 import EmailIcon from "@mui/icons-material/Email";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useMe } from "../../context/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchAdminSettings, updateAdminSettings } from "../../api/backend";
 import "./ProfilePage.css";
 
 const ROLE_CONFIG = {
@@ -23,6 +25,119 @@ const ROLE_CONFIG = {
         color: "#6366f1",
         description: "Acceso a los workspaces donde eres responsable.",
     },
+};
+
+const AdminSettingsSection = () => {
+    const queryClient = useQueryClient();
+    const { data: settings, isLoading } = useQuery({
+        queryKey: ["adminSettings"],
+        queryFn: fetchAdminSettings,
+    });
+
+    const mutation = useMutation({
+        mutationFn: updateAdminSettings,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["adminSettings"] });
+            alert("Configuración actualizada correctamente.");
+        },
+        onError: (err) => {
+            alert("Error al actualizar la configuración: " + err.message);
+        }
+    });
+
+    if (isLoading) return <LinearProgress sx={{ mt: 2, borderRadius: 2 }} />;
+
+    const handleSave = (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        mutation.mutate({
+            fiscal_year_start_month: parseInt(formData.get("month")),
+            current_fiscal_year: parseInt(formData.get("year")),
+        });
+    };
+
+    return (
+        <Box sx={{ mt: 5 }}>
+            <Typography variant="h5" fontWeight={800} sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <AdminPanelSettingsIcon sx={{ color: 'primary.main' }} />
+                Configuración de la Organización
+            </Typography>
+
+            <Card sx={{ borderRadius: 4, border: '1px solid rgba(99,102,241,0.12)', bgcolor: 'rgba(99,102,241,0.02)' }}>
+                <CardContent sx={{ p: 4 }}>
+                    <form onSubmit={handleSave}>
+                        <Grid container spacing={4} alignItems="flex-end">
+                            <Grid item xs={12} md={4}>
+                                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase' }}>
+                                    Mes de Inicio Año Fiscal
+                                </Typography>
+                                <Select
+                                    name="month"
+                                    defaultValue={settings?.fiscal_year_start_month || 1}
+                                    fullWidth
+                                    size="small"
+                                    sx={{ bgcolor: 'white', borderRadius: 2 }}
+                                >
+                                    <MenuItem value={1}>Enero</MenuItem>
+                                    <MenuItem value={2}>Febrero</MenuItem>
+                                    <MenuItem value={3}>Marzo</MenuItem>
+                                    <MenuItem value={4}>Abril</MenuItem>
+                                    <MenuItem value={5}>Mayo</MenuItem>
+                                    <MenuItem value={6}>Junio</MenuItem>
+                                    <MenuItem value={7}>Julio</MenuItem>
+                                    <MenuItem value={8}>Agosto</MenuItem>
+                                    <MenuItem value={9}>Septiembre</MenuItem>
+                                    <MenuItem value={10}>Octubre</MenuItem>
+                                    <MenuItem value={11}>Noviembre</MenuItem>
+                                    <MenuItem value={12}>Diciembre</MenuItem>
+                                </Select>
+                            </Grid>
+
+                            <Grid item xs={12} md={4}>
+                                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase' }}>
+                                    Año Fiscal Vigente (Actual)
+                                </Typography>
+                                <TextField
+                                    name="year"
+                                    type="number"
+                                    defaultValue={settings?.current_fiscal_year || 2026}
+                                    fullWidth
+                                    size="small"
+                                    sx={{ bgcolor: 'white', borderRadius: 2 }}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} md={4}>
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    fullWidth
+                                    disabled={mutation.isPending}
+                                    sx={{
+                                        height: 40,
+                                        borderRadius: 2,
+                                        boxShadow: '0 4px 12px rgba(99,102,241,0.2)',
+                                        textTransform: 'none',
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    {mutation.isPending ? "Guardando..." : "Guardar Cambios"}
+                                </Button>
+                            </Grid>
+
+                            {settings?.fy_start_date && (
+                                <Grid item xs={12}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                        Ciclo fiscal actual: del <strong>{settings.fy_start_date}</strong> al <strong>{settings.fy_end_date}</strong>.
+                                    </Typography>
+                                </Grid>
+                            )}
+                        </Grid>
+                    </form>
+                </CardContent>
+            </Card>
+        </Box>
+    );
 };
 
 export default function ProfilePage() {
@@ -150,6 +265,8 @@ export default function ProfilePage() {
                     </Grid>
                 </CardContent>
             </Card>
+
+            {role === 'admin' && <AdminSettingsSection />}
         </Box>
     );
 }

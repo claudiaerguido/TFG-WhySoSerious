@@ -1,12 +1,10 @@
-import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
     Box, Typography, Card, CardContent, Button, Alert, Skeleton,
-    ToggleButtonGroup, ToggleButton, Divider, Paper
+    ToggleButtonGroup, ToggleButton, Paper, TextField
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LockIcon from "@mui/icons-material/Lock";
 import {
     fetchEmployeeProfile,
@@ -14,27 +12,30 @@ import {
 } from "../../api/backend";
 import RiskCard from "../../components/RiskCard";
 import RiskTrendChart from "../../components/RiskTrendChart";
+import { useRiskFilters } from "../../hooks/useRiskFilters";
 import "./EmployeeProfilePage.css";
 
 const DAY_OPTIONS = [1, 7, 30, 60];
-const DAY_LABEL = { 1: "24h", 7: "7 Días", 30: "30 Días", 60: "60 Días" };
+const DAY_LABEL = { 1: "24h", 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual" };
 
 export default function EmployeeProfilePage() {
     const { email } = useParams();
     const navigate = useNavigate();
-    const [days, setDays] = useState(7);
 
-    console.log("[EmployeeProfile] Mostrando perfil:", email);
+    const {
+        days, rangeMode, customRange, setCustomRange,
+        queryStart, queryEnd, handleFilterChange
+    } = useRiskFilters(7);
 
     const profileQuery = useQuery({
-        queryKey: ["employeeProfile", email, days],
-        queryFn: () => fetchEmployeeProfile(email, days),
+        queryKey: ["employeeProfile", email, days, rangeMode, queryStart, queryEnd],
+        queryFn: () => fetchEmployeeProfile(email, days, queryStart, queryEnd),
         staleTime: 60_000,
     });
 
     const trendQuery = useQuery({
-        queryKey: ["employeeTrend", email, days],
-        queryFn: () => fetchEmployeeTrend(email, days),
+        queryKey: ["employeeTrend", email, days, rangeMode, queryStart, queryEnd],
+        queryFn: () => fetchEmployeeTrend(email, days, queryStart, queryEnd),
         staleTime: 60_000,
     });
 
@@ -60,7 +61,6 @@ export default function EmployeeProfilePage() {
             </Box>
         );
     }
-
 
     return (
         <Box className="project-detail-container">
@@ -91,20 +91,46 @@ export default function EmployeeProfilePage() {
             {/* Controles */}
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                    Análisis de los últimos {days} días
+                    Periodo: {rangeMode === "fiscal" ? "FY Actual" : rangeMode === "custom" ? "Personalizado" : (days === 1 ? "Solo hoy" : `últimos ${days} días`)}
                 </Typography>
-                <ToggleButtonGroup
-                    value={days}
-                    exclusive
-                    onChange={(_, v) => v && setDays(v)}
-                    size="small"
-                >
-                    {DAY_OPTIONS.map((d) => (
-                        <ToggleButton key={d} value={d} sx={{ px: 2, fontSize: 12 }}>
-                            {DAY_LABEL[d]}
-                        </ToggleButton>
-                    ))}
-                </ToggleButtonGroup>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                    {rangeMode === "custom" && (
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <TextField
+                                label="Inicio"
+                                type="date"
+                                size="small"
+                                InputLabelProps={{ shrink: true }}
+                                value={customRange.start}
+                                onChange={e => setCustomRange(prev => ({ ...prev, start: e.target.value }))}
+                                sx={{ width: 140 }}
+                            />
+                            <TextField
+                                label="Fin"
+                                type="date"
+                                size="small"
+                                InputLabelProps={{ shrink: true }}
+                                value={customRange.end}
+                                onChange={e => setCustomRange(prev => ({ ...prev, end: e.target.value }))}
+                                sx={{ width: 140 }}
+                            />
+                        </Box>
+                    )}
+                    <ToggleButtonGroup
+                        value={rangeMode === 'preset' ? days : rangeMode}
+                        exclusive
+                        onChange={(_, v) => handleFilterChange(v)}
+                        size="small"
+                    >
+                        {DAY_OPTIONS.map((d) => (
+                            <ToggleButton key={d} value={d} sx={{ px: 2, fontSize: 12 }}>
+                                {DAY_LABEL[d]}
+                            </ToggleButton>
+                        ))}
+                        <ToggleButton value="fiscal" sx={{ px: 2, fontSize: 12, textTransform: "none" }}>FY Actual</ToggleButton>
+                        <ToggleButton value="custom" sx={{ px: 2, fontSize: 12, textTransform: "none" }}>Personalizado</ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
             </Box>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -139,7 +165,7 @@ export default function EmployeeProfilePage() {
                                 </Paper>
                             ) : (
                                 <Box sx={{ mt: 2 }}>
-                                    <RiskTrendChart data={trendData} days={days} />
+                                    <RiskTrendChart data={trendData} days={days} startDate={queryStart} endDate={queryEnd} />
                                 </Box>
                             )}
                         </CardContent>

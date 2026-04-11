@@ -94,19 +94,34 @@ def fetch_metrics_for_users(
     days: int,
     project_id: int = None,
     global_mode: bool = False,
-    workspace_id: int = None # Compatibilidad Legacy: Fase A
+    workspace_id: int = None, # Compatibilidad Legacy: Fase A
+    start_date: str = None,
+    end_date: str = None
 ) -> pd.DataFrame:
     """Recupera métricas de riesgo filtradas por usuario y tiempo."""
     try:
-        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
         cols = ["user_email", "message_timestamp"] + [DB_COLS[l] for l in TARGET_LABELS]
         
         q = (
             supabase.table("risk_metrics")
             .select(",".join(cols))
             .in_("user_email", emails)
-            .gte("message_timestamp", since)
         )
+        
+        # Asegurar que end_date incluya todo el día final (hasta 23:59:59)
+        effective_end = end_date
+        if effective_end and len(effective_end) == 10:
+            effective_end = f"{effective_end}T23:59:59.999Z"
+
+        if start_date and effective_end:
+            q = q.gte("message_timestamp", start_date).lte("message_timestamp", effective_end)
+        elif start_date:
+            q = q.gte("message_timestamp", start_date)
+        elif effective_end:
+            q = q.lte("message_timestamp", effective_end)
+        else:
+            since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+            q = q.gte("message_timestamp", since)
         
         if not global_mode:
             if project_id is not None:
@@ -147,3 +162,25 @@ def save_risk_metrics(
     except Exception as e:
         if "duplicate" not in str(e).lower() and "unique" not in str(e).lower():
             print(f"⚠️ save_risk_metrics error message_id={message_id}: {e}")
+
+# ── Configuración Global ───────────────────────────────────────────────────
+
+def fetch_org_settings(supabase: Client) -> Dict[str, Any]:
+    """Recupera la configuración global de la organización."""
+    try:
+        res = supabase.table("org_settings").select("*").execute()
+        return {item["key"]: item["value"] for item in (res.data or [])}
+    except Exception as e:
+        print(f"⚠️ fetch_org_settings error: {e}")
+        return {}
+
+def save_org_settings(supabase: Client, settings: Dict[str, Any]) -> bool:
+    """Guarda la configuración global en la tabla org_settings."""
+    try:
+        data = [{"key": k, "value": str(v)} for k, v in settings.items()]
+        if data:
+            supabase.table("org_settings").upsert(data, on_conflict="key").execute()
+        return True
+    except Exception as e:
+        print(f"⚠️ save_org_settings error: {e}")
+        return False

@@ -30,6 +30,7 @@ from services.risk_service import (
     get_employee_full_profile, get_employee_risk_trend
 )
 from db_client import get_supabase_client
+from db_repository import fetch_org_settings, save_org_settings
 
 # ==========================================
 # 1. CONFIGURACIÓN INICIAL & MIDDLEWARE
@@ -77,6 +78,10 @@ class MemberProjectRequest(BaseModel):
     user_email: str
     project_id: int
 
+class SettingsRequest(BaseModel):
+    fiscal_year_start_month: int
+    current_fiscal_year: int
+
 
 # ==========================================
 # 2. HELPERS DE SEGURIDAD INTERNOS
@@ -114,6 +119,18 @@ def _check_project_access(email: str, role: str, project_id: int) -> bool:
         .maybe_single() \
         .execute()
     return res.data is not None
+
+
+def _get_fiscal_year_range(start_month: int, fy_year: int):
+    """Calcula el rango de fechas para el año fiscal."""
+    from datetime import date, timedelta
+    if start_month == 1:
+        start = date(fy_year, 1, 1)
+        end = date(fy_year, 12, 31)
+    else:
+        start = date(fy_year - 1, start_month, 1)
+        end = date(fy_year, start_month, 1) - timedelta(days=1)
+    return start.isoformat(), end.isoformat()
 
 
 def _check_team_access(email: str, role: str, team_id: int) -> bool:
@@ -282,7 +299,7 @@ async def get_teams_list(request: Request):
     return JSONResponse({"teams": data["teams"]})
 
 @app.get("/api/project/risk")
-async def project_risk(request: Request, project_id: int, days: int = 7):
+async def project_risk(request: Request, project_id: int, days: int = 7, start_date: str = None, end_date: str = None):
     """Calcula el riesgo acumulado de un proyecto específico."""
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
@@ -290,10 +307,10 @@ async def project_risk(request: Request, project_id: int, days: int = 7):
     if not _check_project_access(email, role, project_id):
         return JSONResponse({"error": "Acceso restringido a este proyecto"}, status_code=403)
         
-    return JSONResponse(get_project_tactical_risk(project_id, days))
+    return JSONResponse(get_project_tactical_risk(project_id, days, start_date, end_date))
 
 @app.get("/api/project/trend")
-async def project_trend(request: Request, project_id: int, days: int = 30):
+async def project_trend(request: Request, project_id: int, days: int = 30, start_date: str = None, end_date: str = None):
     """Histórico de tendencia de riesgo para un proyecto."""
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
@@ -301,10 +318,10 @@ async def project_trend(request: Request, project_id: int, days: int = 30):
     if not _check_project_access(email, role, project_id):
         return JSONResponse({"error": "Acceso restringido"}, status_code=403)
         
-    return JSONResponse(get_project_risk_trend(project_id, days))
+    return JSONResponse(get_project_risk_trend(project_id, days, start_date, end_date))
 
 @app.get("/api/team/risk")
-async def team_risk(request: Request, team_id: int, days: int = 7):
+async def team_risk(request: Request, team_id: int, days: int = 7, start_date: str = None, end_date: str = None):
     """Riesgo global agregado de un equipo completo."""
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
@@ -312,10 +329,10 @@ async def team_risk(request: Request, team_id: int, days: int = 7):
     if not _check_team_access(email, role, team_id):
         return JSONResponse({"error": "Acceso restringido a este equipo"}, status_code=403)
         
-    return JSONResponse(get_team_global_risk(team_id, days))
+    return JSONResponse(get_team_global_risk(team_id, days, start_date, end_date))
 
 @app.get("/api/team/trend")
-async def team_trend(request: Request, team_id: int, days: int = 30):
+async def team_trend(request: Request, team_id: int, days: int = 30, start_date: str = None, end_date: str = None):
     """Tendencia temporal de riesgo para un equipo."""
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
@@ -323,10 +340,10 @@ async def team_trend(request: Request, team_id: int, days: int = 30):
     if not _check_team_access(email, role, team_id):
         return JSONResponse({"error": "Acceso restringido"}, status_code=403)
         
-    return JSONResponse(get_team_risk_trend(team_id, days))
+    return JSONResponse(get_team_risk_trend(team_id, days, start_date, end_date))
 
 @app.get("/api/team/member-breakdown")
-async def team_member_breakdown(request: Request, user_email: str, days: int = 7):
+async def team_member_breakdown(request: Request, user_email: str, days: int = 7, start_date: str = None, end_date: str = None):
     """
     Desglose de riesgo por proyectos de un usuario.
     Solo accesible por Admins/Managers o por el propio usuario.
@@ -338,11 +355,11 @@ async def team_member_breakdown(request: Request, user_email: str, days: int = 7
     if role not in ["admin", "manager"] and email != user_email:
         return JSONResponse({"error": "No tienes permiso para ver el desglose de este miembro"}, status_code=403)
         
-    return JSONResponse(get_member_projects_breakdown(user_email, days))
+    return JSONResponse(get_member_projects_breakdown(user_email, days, start_date, end_date))
 
 
 @app.get("/api/employee/profile")
-async def employee_profile(request: Request, user_email: str, days: int = 7):
+async def employee_profile(request: Request, user_email: str, days: int = 7, start_date: str = None, end_date: str = None):
     """Perfil detallado de riesgo de un empleado."""
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
@@ -351,10 +368,10 @@ async def employee_profile(request: Request, user_email: str, days: int = 7):
     if role not in ["admin", "manager"] and email != user_email:
         return JSONResponse({"error": "No tienes permiso para ver este perfil"}, status_code=403)
         
-    return JSONResponse(get_employee_full_profile(user_email, days))
+    return JSONResponse(get_employee_full_profile(user_email, days, start_date, end_date))
 
 @app.get("/api/employee/trend")
-async def employee_trend(request: Request, user_email: str, days: int = 30):
+async def employee_trend(request: Request, user_email: str, days: int = 30, start_date: str = None, end_date: str = None):
     """Tendencia temporal de riesgo de un empleado."""
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
@@ -362,7 +379,7 @@ async def employee_trend(request: Request, user_email: str, days: int = 30):
     if role not in ["admin", "manager"] and email != user_email:
         return JSONResponse({"error": "No tienes permiso para ver esta tendencia"}, status_code=403)
         
-    return JSONResponse(get_employee_risk_trend(user_email, days))
+    return JSONResponse(get_employee_risk_trend(user_email, days, start_date, end_date))
 
 
 # ==========================================
@@ -385,6 +402,46 @@ async def trigger_analysis(request: Request):
         return {"status": "success", "message": "Proceso de análisis activado manualmente."}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/admin/settings")
+async def get_settings(request: Request):
+    """Obtiene la configuración global (Admin/Manager)."""
+    email, role = _require_session(request)
+    if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
+    
+    # Permitimos lectura a Managers y Admins
+    if role not in ["admin", "manager"]:
+        return JSONResponse({"error": "Acceso denegado"}, status_code=403)
+        
+    db_sett = fetch_org_settings(get_supabase_client())
+    
+    # Valores por defecto si no existen
+    month = int(db_sett.get("fiscal_year_start_month", 1))
+    year = int(db_sett.get("current_fiscal_year", 2026))
+    
+    start_date, end_date = _get_fiscal_year_range(month, year)
+    
+    return JSONResponse({
+        "fiscal_year_start_month": month,
+        "current_fiscal_year": year,
+        "fy_start_date": start_date,
+        "fy_end_date": end_date
+    })
+
+@app.post("/api/admin/settings")
+async def update_settings(request: Request, body: SettingsRequest):
+    """Actualiza la configuración global (Solo Admin)."""
+    email, role = _require_session(request)
+    if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
+    
+    if role != "admin":
+        return JSONResponse({"error": "Se requiere rol de Administrador"}, status_code=403)
+        
+    success = save_org_settings(get_supabase_client(), {
+        "fiscal_year_start_month": body.fiscal_year_start_month,
+        "current_fiscal_year": body.current_fiscal_year
+    })
+    return {"status": "success" if success else "error"}
 
 
 # ==========================================

@@ -72,7 +72,7 @@ def _is_operational_member(member: Dict[str, Any]) -> bool:
 
 # ── Modelo de 4 niveles ─────────────────────────────────────────────────────
 
-def get_employee_global_risk(user_email: str, days: int = 7) -> Optional[float]:
+def get_employee_global_risk(user_email: str, days: int = 7, start_date: str = None, end_date: str = None) -> Optional[float]:
     """
     Nivel 1: Riesgo global de una persona.
     Considera todos sus mensajes dentro de la ventana temporal.
@@ -86,6 +86,8 @@ def get_employee_global_risk(user_email: str, days: int = 7) -> Optional[float]:
         [user_email],
         days,
         global_mode=True,
+        start_date=start_date,
+        end_date=end_date,
     )
     return _compute_mean_risk_from_df(df)
 
@@ -93,7 +95,9 @@ def get_employee_global_risk(user_email: str, days: int = 7) -> Optional[float]:
 def get_employee_project_risk(
     user_email: str,
     project_id: int,
-    days: int = 7
+    days: int = 7,
+    start_date: str = None,
+    end_date: str = None
 ) -> Optional[float]:
     """
     Nivel 2: Riesgo táctico de una persona dentro de un proyecto.
@@ -109,11 +113,13 @@ def get_employee_project_risk(
         days,
         project_id=project_id,
         global_mode=False,
+        start_date=start_date,
+        end_date=end_date,
     )
     return _compute_mean_risk_from_df(df)
 
 
-def get_team_global_risk(team_id: int, days: int = 7) -> Dict[str, Any]:
+def get_team_global_risk(team_id: int, days: int = 7, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
     """
     Nivel 3: Riesgo global del equipo.
     Se calcula como la media del riesgo global de sus integrantes operativos.
@@ -139,7 +145,7 @@ def get_team_global_risk(team_id: int, days: int = 7) -> Dict[str, Any]:
     for member in members:
         email = member["user_email"]
         display_name = _visible_name(member)
-        risk_01 = get_employee_global_risk(email, days)
+        risk_01 = get_employee_global_risk(email, days, start_date, end_date)
         risk_pct = _to_pct(risk_01)
 
         members_risks.append({
@@ -149,7 +155,7 @@ def get_team_global_risk(team_id: int, days: int = 7) -> Dict[str, Any]:
             "alias": display_name,  # compatibilidad frontend
             "role": member.get("role", "employee"),
             "global_risk": risk_pct,
-            "projects": get_member_projects_breakdown(email, days),
+            "projects": get_member_projects_breakdown(email, days, start_date, end_date),
         })
 
     employee_risks = [
@@ -169,7 +175,7 @@ def get_team_global_risk(team_id: int, days: int = 7) -> Dict[str, Any]:
     }
 
 
-def get_project_tactical_risk(project_id: int, days: int = 7) -> Dict[str, Any]:
+def get_project_tactical_risk(project_id: int, days: int = 7, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
     """
     Nivel 4: Riesgo táctico del proyecto.
     Se calcula como la media del riesgo en proyecto de sus integrantes operativos.
@@ -194,7 +200,7 @@ def get_project_tactical_risk(project_id: int, days: int = 7) -> Dict[str, Any]:
     for member in members:
         email = member["user_email"]
         display_name = _visible_name(member)
-        risk_01 = get_employee_project_risk(email, project_id, days)
+        risk_01 = get_employee_project_risk(email, project_id, days, start_date, end_date)
         risk_pct = _to_pct(risk_01)
 
         members_risks.append({
@@ -225,7 +231,7 @@ def get_project_tactical_risk(project_id: int, days: int = 7) -> Dict[str, Any]:
 
 # ── Desgloses y tendencias ──────────────────────────────────────────────────
 
-def get_member_projects_breakdown(user_email: str, days: int = 7) -> List[Dict[str, Any]]:
+def get_member_projects_breakdown(user_email: str, days: int = 7, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
     """
     Devuelve el riesgo táctico por proyecto de un miembro.
     Mantiene cálculo dinámico a partir de risk_metrics.
@@ -240,7 +246,7 @@ def get_member_projects_breakdown(user_email: str, days: int = 7) -> List[Dict[s
     for project in projects:
         project_id = project["project_id"]
         project_name = project.get("projects", {}).get("name", f"Proyecto {project_id}")
-        risk_01 = get_employee_project_risk(user_email, project_id, days)
+        risk_01 = get_employee_project_risk(user_email, project_id, days, start_date, end_date)
 
         breakdown.append({
             "project_id": project_id,
@@ -251,7 +257,7 @@ def get_member_projects_breakdown(user_email: str, days: int = 7) -> List[Dict[s
     return breakdown
 
 
-def get_employee_risk_trend(user_email: str, days: int = 30) -> Dict[str, Any]:
+def get_employee_risk_trend(user_email: str, days: int = 30, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
     """
     Tendencia temporal del riesgo global de un empleado.
     """
@@ -259,14 +265,14 @@ def get_employee_risk_trend(user_email: str, days: int = 30) -> Dict[str, Any]:
     if not supabase:
         return {"trend": [], "email": user_email}
 
-    df = fetch_metrics_for_users(supabase, [user_email], days, global_mode=True)
+    df = fetch_metrics_for_users(supabase, [user_email], days, global_mode=True, start_date=start_date, end_date=end_date)
     return {
         "trend": _compute_daily_trend_from_df(df),
         "email": user_email,
     }
 
 
-def get_employee_full_profile(user_email: str, days: int = 7) -> Dict[str, Any]:
+def get_employee_full_profile(user_email: str, days: int = 7, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
     """
     Consolidado de perfil de empleado: metadatos + riesgo global + desglose proyectos.
     """
@@ -275,9 +281,9 @@ def get_employee_full_profile(user_email: str, days: int = 7) -> Dict[str, Any]:
         return {"status": "error", "message": "No se pudo conectar a Supabase"}
 
     metadata = fetch_user_metadata(supabase, user_email)
-    risk_01 = get_employee_global_risk(user_email, days)
+    risk_01 = get_employee_global_risk(user_email, days, start_date, end_date)
     risk_pct = _to_pct(risk_01)
-    breakdown = get_member_projects_breakdown(user_email, days)
+    breakdown = get_member_projects_breakdown(user_email, days, start_date, end_date)
 
     display_name = metadata.get("display_name") or user_email.split("@")[0]
 
@@ -292,7 +298,7 @@ def get_employee_full_profile(user_email: str, days: int = 7) -> Dict[str, Any]:
     }
 
 
-def get_team_risk_trend(team_id: int, days: int = 30) -> Dict[str, Any]:
+def get_team_risk_trend(team_id: int, days: int = 30, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
     """
     Tendencia temporal del equipo.
     Solo considera integrantes operativos (role='employee').
@@ -310,14 +316,14 @@ def get_team_risk_trend(team_id: int, days: int = 30) -> Dict[str, Any]:
     if not emails:
         return {"trend": [], "team_id": team_id}
 
-    df = fetch_metrics_for_users(supabase, emails, days, global_mode=True)
+    df = fetch_metrics_for_users(supabase, emails, days, global_mode=True, start_date=start_date, end_date=end_date)
     return {
         "trend": _compute_daily_trend_from_df(df),
         "team_id": team_id,
     }
 
 
-def get_project_risk_trend(project_id: int, days: int = 30) -> Dict[str, Any]:
+def get_project_risk_trend(project_id: int, days: int = 30, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
     """
     Tendencia temporal del proyecto.
     Solo considera integrantes operativos (role='employee').
@@ -341,6 +347,8 @@ def get_project_risk_trend(project_id: int, days: int = 30) -> Dict[str, Any]:
         days,
         project_id=project_id,
         global_mode=False,
+        start_date=start_date,
+        end_date=end_date,
     )
     return {
         "trend": _compute_daily_trend_from_df(df),

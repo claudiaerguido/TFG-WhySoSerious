@@ -5,7 +5,7 @@ import {
   Box, Typography, Card, CardContent, Button, Chip,
   Alert, Skeleton, ToggleButtonGroup, ToggleButton,
   LinearProgress, Accordion, AccordionSummary, AccordionDetails,
-  Divider, Paper
+  Divider, Paper, TextField
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -27,12 +27,13 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import { MenuItem, Select, FormControl } from "@mui/material";
 import RiskTrendChart from "../../components/RiskTrendChart";
+import { useRiskFilters } from "../../hooks/useRiskFilters";
 import "./ProjectDetailPage.css";
 
 const DAY_OPTIONS = [1, 7, 30, 60];
-const DAY_LABEL = { 1: "Últimas 24h", 7: "7 Días", 30: "30 Días", 60: "60 Días" };
+const DAY_LABEL = { 1: "Últimas 24h", 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual" };
 
-function MemberRiskRow({ member, type, days }) {
+function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange = {} }) {
   const { id: teamId } = useParams();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
@@ -43,9 +44,12 @@ function MemberRiskRow({ member, type, days }) {
   const memberEmail = member.email || member.user_email;
   const canManage = user?.role === "admin" || (user?.role === "manager" && type === "team");
 
+  const queryStart = rangeMode === "custom" ? customRange.start : null;
+  const queryEnd = rangeMode === "custom" ? customRange.end : null;
+
   const { data: breakdown, isLoading } = useQuery({
-    queryKey: ["memberBreakdown", memberEmail, days],
-    queryFn: () => fetchTeamMemberBreakdown(memberEmail, days),
+    queryKey: ["memberBreakdown", memberEmail, days, rangeMode, queryStart, queryEnd],
+    queryFn: () => fetchTeamMemberBreakdown(memberEmail, days, queryStart, queryEnd),
     enabled: expanded && type === "team" && !member.projects,
     staleTime: 60_000,
   });
@@ -283,17 +287,20 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const type = location.pathname.includes("/team/") ? "team" : "project";
-  const [days, setDays] = useState(7);
+  const {
+    days, rangeMode, customRange, setCustomRange,
+    queryStart, queryEnd, handleFilterChange
+  } = useRiskFilters(7);
 
   const riskQuery = useQuery({
-    queryKey: [type === "team" ? "teamRisk" : "projectRisk", itemId, days],
-    queryFn: () => type === "team" ? fetchTeamRisk(itemId, days) : fetchProjectRisk(itemId, days),
+    queryKey: [type === "team" ? "teamRisk" : "projectRisk", itemId, days, rangeMode, queryStart, queryEnd],
+    queryFn: () => type === "team" ? fetchTeamRisk(itemId, days, queryStart, queryEnd) : fetchProjectRisk(itemId, days, queryStart, queryEnd),
     staleTime: 30_000,
   });
 
   const trendQuery = useQuery({
-    queryKey: [type === "team" ? "teamTrend" : "projectTrend", itemId, days],
-    queryFn: () => type === "team" ? fetchTeamTrend(itemId, days) : fetchProjectTrend(itemId, days),
+    queryKey: [type === "team" ? "teamTrend" : "projectTrend", itemId, days, rangeMode, queryStart, queryEnd],
+    queryFn: () => type === "team" ? fetchTeamTrend(itemId, days, queryStart, queryEnd) : fetchProjectTrend(itemId, days, queryStart, queryEnd),
     staleTime: 30_000,
   });
 
@@ -356,13 +363,42 @@ export default function ProjectDetailPage() {
       {/* Controles de Acción (Periodo + Refrescar) */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Periodo: {days === 1 ? "Solo hoy" : `últimos ${days} días`}
+          Periodo: {rangeMode === "fiscal" ? "FY Actual" : rangeMode === "custom" ? "Personalizado" : (days === 1 ? "Solo hoy" : `últimos ${days} días`)}
         </Typography>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <ToggleButtonGroup value={days} exclusive onChange={(_, v) => v && setDays(v)} size="small">
+          {rangeMode === "custom" && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField
+                label="Inicio"
+                type="date"
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                value={customRange.start}
+                onChange={e => setCustomRange(prev => ({ ...prev, start: e.target.value }))}
+                sx={{ width: 140 }}
+              />
+              <TextField
+                label="Fin"
+                type="date"
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                value={customRange.end}
+                onChange={e => setCustomRange(prev => ({ ...prev, end: e.target.value }))}
+                sx={{ width: 140 }}
+              />
+            </Box>
+          )}
+          <ToggleButtonGroup
+            value={rangeMode === 'preset' ? days : rangeMode}
+            exclusive
+            onChange={(_, v) => handleFilterChange(v)}
+            size="small"
+          >
             {DAY_OPTIONS.map((d) => (
               <ToggleButton key={d} value={d} sx={{ px: 2, fontSize: 13, textTransform: "none" }}>{DAY_LABEL[d]}</ToggleButton>
             ))}
+            <ToggleButton value="fiscal" sx={{ px: 2, fontSize: 13, textTransform: "none" }}>FY Actual</ToggleButton>
+            <ToggleButton value="custom" sx={{ px: 2, fontSize: 13, textTransform: "none" }}>Personalizado</ToggleButton>
           </ToggleButtonGroup>
           <Button
             variant="outlined"
@@ -422,7 +458,7 @@ export default function ProjectDetailPage() {
                 </Box>
               ) : (
                 <Box sx={{ mt: 2 }}>
-                  <RiskTrendChart data={trendData} days={days} />
+                  <RiskTrendChart data={trendData} days={days} startDate={queryStart} endDate={queryEnd} />
                 </Box>
               )}
               {trendData.length > 1 && (
@@ -456,13 +492,13 @@ export default function ProjectDetailPage() {
               {type === "team" && (riskData?.members ?? []).filter(m => m.role !== 'employee').map(m => (
                 <Box key={m.email} sx={{ mb: 1 }}>
                   <Typography variant="caption" color="text.disabled" sx={{ ml: 1, mb: 0.5, display: "block", fontWeight: 700 }}>RESPONSABLE / GESTIÓN</Typography>
-                  <MemberRiskRow member={m} type={type} days={days} />
+                  <MemberRiskRow member={m} type={type} days={days} rangeMode={rangeMode} customRange={customRange} />
                 </Box>
               ))}
 
               {/* Sección de Empleados */}
               {(riskData?.members ?? []).filter(m => m.role === 'employee').map((m) => (
-                <MemberRiskRow key={m.email} member={m} type={type} days={days} />
+                <MemberRiskRow key={m.email} member={m} type={type} days={days} rangeMode={rangeMode} customRange={customRange} />
               ))}
             </Box>
           )}

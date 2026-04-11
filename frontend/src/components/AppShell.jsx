@@ -7,6 +7,7 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupsIcon from "@mui/icons-material/Groups";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import LogoutIcon from "@mui/icons-material/LogoutOutlined";
 import MenuIcon from "@mui/icons-material/Menu";
 import { logoutUrl } from "../api/backend";
@@ -17,6 +18,7 @@ const DRAWER_WIDTH = 260;
 const NAV_ITEMS = [
     { label: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { label: "Equipos", icon: <GroupsIcon />, path: "/teams" },
+    { label: "Proyectos", icon: <AssignmentIcon />, path: "/projects" },
     { label: "Mi Perfil", icon: <AccountCircleIcon />, path: "/profile" },
 ];
 
@@ -113,18 +115,6 @@ export default function AppShell() {
 
             <Divider sx={{ mx: 2, opacity: 0.5 }} />
 
-            <Box sx={{ p: 2, mb: 2 }}>
-                <Card sx={{ bgcolor: 'rgba(99, 102, 241, 0.03)', border: '1px dashed rgba(99, 102, 241, 0.2)', boxShadow: 'none' }}>
-                    <CardContent sx={{ p: '16px !important' }}>
-                        <Typography variant="caption" fontWeight={800} color="primary" sx={{ textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
-                            Modo Demo
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            Datos analizados vía Microsoft Graph API
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Box>
         </Box>
     );
 

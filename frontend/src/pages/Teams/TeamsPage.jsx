@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
     Box, Typography, Skeleton, Avatar, Chip, Divider, Paper
 } from "@mui/material";
@@ -99,6 +99,9 @@ function TeamSection({ title, items, type }) {
 }
 
 export default function TeamsPage() {
+    const location = useLocation();
+    const isProjectsView = location.pathname === "/projects";
+
     const { data: workspacesData, isLoading } = useQuery({
         queryKey: ["myTeamsAndProjects"],
         queryFn: fetchMyTeamsAndProjects,
@@ -108,14 +111,19 @@ export default function TeamsPage() {
     const teams = workspacesData?.teams ?? [];
     const projects = workspacesData?.projects ?? [];
 
+    const pageTitle = isProjectsView ? "Proyectos" : "Equipos";
+    const pageDesc = isProjectsView
+        ? "Riesgo táctico del proyecto: promedio del riesgo contextual de sus integrantes."
+        : "Riesgo global del equipo: promedio del riesgo global de sus integrantes.";
+
     return (
         <Box sx={{ maxWidth: 860, mx: 'auto' }}>
             <Box sx={{ mb: 5 }}>
                 <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: -0.5 }}>
-                    Equipos
+                    {pageTitle}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Riesgo global del equipo: promedio del riesgo global de sus integrantes.
+                    {pageDesc}
                 </Typography>
             </Box>
 
@@ -129,8 +137,8 @@ export default function TeamsPage() {
                 </Box>
             ) : (
                 <>
-                    <TeamSection title="Equipos Organizativos" items={teams} type="team" />
-                    <TeamSection title="Proyectos Tácticos" items={projects} type="project" />
+                    {!isProjectsView && <TeamSection title="Equipos Organizativos" items={teams} type="team" />}
+                    {isProjectsView && <TeamSection title="Proyectos Tácticos" items={projects} type="project" />}
                 </>
             )}
         </Box>

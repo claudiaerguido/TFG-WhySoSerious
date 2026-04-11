@@ -1,9 +1,29 @@
 const BASE_URL = "http://localhost:8000";
 
+const getDateQuery = (days, start, end) => start && end ? `start_date=${start}&end_date=${end}` : `days=${days}`;
+
+
 // ── Admin Actions ──────────────────────────────────────────────
 export async function triggerAnalysis() {
     const res = await fetch(`${BASE_URL}/admin/trigger-analysis`, { method: "POST" });
     if (!res.ok) throw new Error("Error al lanzar análisis");
+    return res.json();
+}
+
+export async function fetchAdminSettings() {
+    const res = await fetch(`${BASE_URL}/api/admin/settings`, { credentials: "include" });
+    if (!res.ok) throw new Error("Error al obtener ajustes de la organización");
+    return res.json();
+}
+
+export async function updateAdminSettings(settings) {
+    const res = await fetch(`${BASE_URL}/api/admin/settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+        credentials: "include"
+    });
+    if (!res.ok) throw new Error("Error al actualizar ajustes");
     return res.json();
 }
 
@@ -37,9 +57,9 @@ export async function fetchMyTeamsAndProjects() {
     return res.json(); // { teams: [...], projects: [...], role }
 }
 
-export async function fetchProjectRisk(projectId, days = 7) {
+export async function fetchProjectRisk(projectId, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/project/risk?project_id=${projectId}&days=${days}`,
+        `${BASE_URL}/api/project/risk?project_id=${projectId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -47,9 +67,9 @@ export async function fetchProjectRisk(projectId, days = 7) {
     return res.json();
 }
 
-export async function fetchProjectTrend(projectId, days = 30) {
+export async function fetchProjectTrend(projectId, days = 30, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/project/trend?project_id=${projectId}&days=${days}`,
+        `${BASE_URL}/api/project/trend?project_id=${projectId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -57,9 +77,9 @@ export async function fetchProjectTrend(projectId, days = 30) {
     return res.json();
 }
 
-export async function fetchTeamRisk(teamId, days = 7) {
+export async function fetchTeamRisk(teamId, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/team/risk?team_id=${teamId}&days=${days}`,
+        `${BASE_URL}/api/team/risk?team_id=${teamId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -67,9 +87,9 @@ export async function fetchTeamRisk(teamId, days = 7) {
     return res.json();
 }
 
-export async function fetchTeamTrend(teamId, days = 30) {
+export async function fetchTeamTrend(teamId, days = 30, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/team/trend?team_id=${teamId}&days=${days}`,
+        `${BASE_URL}/api/team/trend?team_id=${teamId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -77,9 +97,9 @@ export async function fetchTeamTrend(teamId, days = 30) {
     return res.json();
 }
 
-export async function fetchTeamMemberBreakdown(userEmail, days = 7) {
+export async function fetchTeamMemberBreakdown(userEmail, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/team/member-breakdown?user_email=${encodeURIComponent(userEmail)}&days=${days}`,
+        `${BASE_URL}/api/team/member-breakdown?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (!res.ok) throw new Error("Error al obtener desglose del miembro");
@@ -114,9 +134,9 @@ export async function removeProjectMember(userEmail, projectId) {
 }
 
 // ── Empleados (US-36) ──────────────────────────────────────────
-export async function fetchEmployeeProfile(userEmail, days = 7) {
+export async function fetchEmployeeProfile(userEmail, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/employee/profile?user_email=${encodeURIComponent(userEmail)}&days=${days}`,
+        `${BASE_URL}/api/employee/profile?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -124,9 +144,9 @@ export async function fetchEmployeeProfile(userEmail, days = 7) {
     return res.json();
 }
 
-export async function fetchEmployeeTrend(userEmail, days = 30) {
+export async function fetchEmployeeTrend(userEmail, days = 30, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/employee/trend?user_email=${encodeURIComponent(userEmail)}&days=${days}`,
+        `${BASE_URL}/api/employee/trend?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });

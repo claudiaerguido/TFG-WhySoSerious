@@ -56,23 +56,36 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
 };
 
-function buildContinuousSeries(data, days) {
+function buildContinuousSeries(data, startDate, endDate, days) {
     const safeData = Array.isArray(data) ? data : [];
     const map = new Map(
         safeData.map((item) => [item.date, item.risk_score_percentage])
     );
 
-    const today = new Date();
-    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    let startObj, endObj;
+    if (startDate && endDate) {
+        // Enforce parsing as local dates matching YYYY-MM-DD
+        const [sy, sm, sd] = startDate.split('-');
+        const [ey, em, ed] = endDate.split('-');
+        startObj = new Date(sy, sm - 1, sd);
+        endObj = new Date(ey, em - 1, ed);
+    } else {
+        const today = new Date();
+        endObj = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        startObj = new Date(endObj);
+        startObj.setDate(startObj.getDate() - days + 1);
+    }
+
+    const diffTime = endObj - startObj;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
     const result = [];
     const hasAnyRealData = safeData.length > 0;
-
     let lastKnownValue = null;
 
-    for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(end);
-        d.setDate(d.getDate() - i);
+    for (let i = 0; i < diffDays; i++) {
+        const d = new Date(startObj);
+        d.setDate(d.getDate() + i);
 
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -91,8 +104,6 @@ function buildContinuousSeries(data, days) {
         } else {
             result.push({
                 date: dateStr,
-                // Si no hay ningún dato en todo el rango, línea plana visual en 0
-                // Si sí hay datos en algún punto, mantenemos el último valor conocido
                 risk_score_percentage: hasAnyRealData
                     ? (lastKnownValue ?? safeData[0]?.risk_score_percentage ?? 0)
                     : 0,
@@ -112,25 +123,25 @@ function formatDateLabel(dateStr) {
 
 function renderDot(props) {
     const { cx, cy, payload } = props;
-    if (!payload) return null;
+    if (!payload || !payload.hasRealData) return null;
 
     return (
         <circle
             cx={cx}
             cy={cy}
-            r={payload.hasRealData ? 3.5 : 2.5}
-            fill={payload.hasRealData ? "#818cf8" : "#cbd5e1"}
+            r={4}
+            fill="#f43f5e"
             stroke="#ffffff"
-            strokeWidth={payload.hasRealData ? 1.5 : 1}
-            opacity={payload.hasRealData ? 1 : 0.45}
+            strokeWidth={2}
+            opacity={1}
         />
     );
 }
 
-const RiskTrendChart = ({ data = [], days = 7, height = 260 }) => {
+const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null, height = 260 }) => {
     const processedData = useMemo(
-        () => buildContinuousSeries(data, days),
-        [data, days]
+        () => buildContinuousSeries(data, startDate, endDate, days),
+        [data, startDate, endDate, days]
     );
 
     const hasAnyRealData = processedData.some((d) => d.hasRealData);
