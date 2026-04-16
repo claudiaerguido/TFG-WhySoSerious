@@ -7,19 +7,19 @@ const LEVEL_CONFIG = {
         color: "#10b981",
         bg: "rgba(16,185,129,0.06)",
         label: "Riesgo Bajo",
-        description: "El equipo mantiene una comunicación estable en las últimas semanas.",
+        description: "Zona de bienestar (0-20%): No se detectan señales relevantes de burnout o tensión. La dinámica de comunicación es estable.",
     },
     Amarillo: {
         color: "#f59e0b",
         bg: "rgba(245,158,11,0.06)",
         label: "Riesgo Moderado",
-        description: "Se detectan algunos indicadores de tensión o sobrecarga puntual.",
+        description: "Zona de seguimiento (20-35%): Se detectan patrones puntuales de sobrecarga o fatiga. Se recomienda monitorizar la evolución.",
     },
     Rojo: {
         color: "#ef4444",
         bg: "rgba(239,68,68,0.06)",
         label: "Riesgo Elevado",
-        description: "Se recomienda revisar la dinámica del equipo con atención.",
+        description: "Zona de revisión (>35%): Indicadores persistentes de alto riesgo. Se requiere intervención prioritaria y análisis de causas.",
     },
 };
 

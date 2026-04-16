@@ -165,7 +165,16 @@ def list_users(top: int = 999, token: Optional[str] = None) -> List[Dict]:
         resp = requests.get(url, headers=headers, timeout=TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
-        all_users.extend(data.get("value", []))
+        users_batch = data.get("value", [])
+        all_users.extend(users_batch)
+        
+        # PROACTIVE CACHE: Calentamos la caché global para evitar peticiones individuales luego
+        for u in users_batch:
+            uid = u.get("id")
+            email = u.get("userPrincipalName") or u.get("mail")
+            if uid and email:
+                USER_CACHE[uid] = email.lower()
+                
         url = data.get("@odata.nextLink")
 
     return all_users
@@ -253,8 +262,13 @@ def list_chat_messages(chat_id: str, top: int = 50, token: Optional[str] = None)
 
             if not sender_email and user_info.get("id"):
                 sender_email = get_user_email_from_id(user_info.get("id"))
-
+                
             sender_name = user_info.get("displayName") or "Unknown"
+
+            # Fallback de seguridad: si no hay email, usamos el nombre para log de depuración
+            # (Aunque en el DB se requiere email en scheduler_tasks)
+            if not sender_email:
+                print(f"⚠️ Aviso: No se pudo resolver email para sender '{sender_name}' (ID: {user_info.get('id')})")
 
             if text and len(text.strip()) > 0:
                 messages_out.append({

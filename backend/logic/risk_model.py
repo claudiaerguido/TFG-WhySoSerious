@@ -23,10 +23,9 @@ DB_COLS = {
     "NEUTRO":             "neutro",
 }
 
-# Subconjunto de etiquetas que contribuyen negativamente al clima laboral
+# Subconjunto de etiquetas operativas que alimentan el observatorio de riesgo
 NEGATIVE_LABELS = [
     "ESTRES_ANSIEDAD",
-    "ENFADO_IRRITACION",
     "SOBRECARGA_URGENCIA",
     "CANSANCIO_FATIGA",
 ]
@@ -57,34 +56,59 @@ def _normalize_weights(weights: Dict[str, float]) -> Dict[str, float]:
     if denom == 0: return {k: 0.0 for k in weights}
     return {k: v / denom for k, v in weights.items()}
 
+import json
+import os
+
+# Ruta al archivo de umbrales calibrados
+THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "../thresholds_phaseB.json")
+
+def _load_calibrated_thresholds() -> Dict[str, float]:
+    """Carga los umbrales de decisión del archivo de configuración."""
+    try:
+        if os.path.exists(THRESHOLDS_PATH):
+            with open(THRESHOLDS_PATH, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Error cargando umbrales en risk_model: {e}")
+    
+    # Fallback: Umbral neutro conservador
+    return {l: 0.35 for l in TARGET_LABELS}
+
 def compute_pearson_msg_risk(df: pd.DataFrame) -> pd.Series:
     """
     Calcula el riesgo individual por mensaje (msg_risk) ponderando etiquetas negativas.
     
     Metodología (Algoritmo Whysoserious):
-      1. risk_base: Se identifica la intensidad máxima de cualquier emoción negativa por mensaje.
-      2. Perfil de Relevancia: Se calcula la correlación de Pearson entre cada etiqueta negativa 
+      1. Calibración: Se filtran las intensidades por debajo de los umbrales definidos.
+      2. risk_base: Se identifica la intensidad máxima de cualquier emoción negativa por mensaje.
+      3. Perfil de Relevancia: Se calcula la correlación de Pearson entre cada etiqueta negativa 
          y la serie 'risk_base'. Esto determina qué emoción es más influyente en el contexto actual.
-      3. Ponderación Dinámica: Solo se consideran correlaciones positivas para asignar pesos.
-      4. msg_risk: Suma ponderada de las etiquetas negativas normalizada al rango [0, 1].
-    
-      Seguridad (Fallback): Si no hay varianza suficiente para la correlación, se utiliza 
-      la suma de las intensidades de las emociones negativas truncada a 1.0.
+      4. Ponderación Dinámica: Solo se consideran correlaciones positivas para asignar pesos.
+      5. msg_risk: Suma ponderada de las etiquetas negativas normalizada al rango [0, 1].
     """
     if df.empty: return pd.Series(dtype=float)
 
     neg_cols = [DB_COLS[l] for l in NEGATIVE_LABELS if DB_COLS[l] in df.columns]
     df = df.copy()
-    
-    # El risk_base representa la 'peor' emoción detectada en cada mensaje
+
+    # APLICAR CALIBRACIÓN (Opción A): Consistencia con el núcleo operativo del model NLP
+    # Si la probabilidad < umbral del modelo, no contribuye al riesgo táctico.
+    thresholds = _load_calibrated_thresholds()
+    for label in NEGATIVE_LABELS:
+        col = DB_COLS[label]
+        if col in df.columns:
+            threshold = thresholds.get(label, 0.50)
+            df[col] = df[col].apply(lambda x: x if x >= threshold else 0.0)
+
+    # El risk_base representa la 'peor' intensidad detectada (tras calibración operativa)
     df["risk_base"] = df[neg_cols].max(axis=1)
 
-    # Cálculo de pesos dinámicos según el contexto de datos (correlación)
+    # Cálculo de pesos dinámicos (Pearson) centrado solo en señales operativas
     weights = {}
     for label in NEGATIVE_LABELS:
         col = DB_COLS[label]
         if col in df.columns:
-            # Determinamos cuánto 'explica' cada etiqueta el riesgo base detectado
+            # Determinamos la influencia de cada pilar operativo en el riesgo total
             c = _safe_corr(df[col], df["risk_base"])
             weights[label] = max(c, 0.0)
         else:
@@ -92,8 +116,8 @@ def compute_pearson_msg_risk(df: pd.DataFrame) -> pd.Series:
 
     total_w = sum(weights.values())
     if total_w == 0:
-        # Si no hay varianza suficiente, sumamos intensidades (enfoque conservador)
-        return df[neg_cols].sum(axis=1).clip(upper=1.0)
+        # Fallback: Riesgo conservador basado en el máximo tras calibración
+        return df["risk_base"]
 
     # Normalización de pesos y cálculo de suma ponderada
     weights = _normalize_weights(weights)

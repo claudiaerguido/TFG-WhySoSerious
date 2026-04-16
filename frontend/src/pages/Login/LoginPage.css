@@ -3,40 +3,195 @@
 .login-container {
     min-height: 100vh;
     display: flex;
+    position: relative;
+    overflow: hidden;
+    /* Fondo profundo con gradiente de producto serio */
+    background: radial-gradient(circle at 0% 0%, #1e1b4b 0%, #0f172a 100%) !important;
+}
+
+/* Orbes de ambiente sutiles */
+.login-glow {
+    position: absolute;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0) 70%);
+    top: -200px;
+    right: -200px;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.login-layout {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    z-index: 10;
+    padding: 0 40px;
+}
+
+/* Columna Izquierda: Branding y Valor */
+.login-info-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-right: 80px;
+    animation: fadeIn 0.8s ease-out;
+}
+
+.login-brand-header {
+    margin-bottom: 48px !important;
+}
+
+.login-main-title {
+    font-size: 3.5rem !important;
+    line-height: 1.1 !important;
+    font-weight: 800 !important;
+    letter-spacing: -2px !important;
+    margin-bottom: 24px !important;
+    color: white !important;
+}
+
+.login-subtitle {
+    font-size: 1.25rem !important;
+    color: #94a3b8 !important;
+    line-height: 1.6 !important;
+    max-width: 480px;
+    margin-bottom: 48px !important;
+}
+
+.login-benefits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login-benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    color: #e2e8f0;
+}
+
+.benefit-icon {
+    margin-top: 4px;
+    color: #818cf8;
+}
+
+/* Columna Derecha: Tarjeta de Login */
+.login-card-side {
+    width: 440px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(ellipse at 60% 40%, #1e1b4b 0%, #0f172a 70%) !important;
+    animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.login-paper {
-    padding: 48px !important;
-    border-radius: 16px !important;
-    text-align: center;
-    max-width: 440px;
+.login-paper-v2 {
     width: 100%;
+    padding: 48px !important;
+    border-radius: 24px !important;
+    background: rgba(30, 41, 59, 0.4) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(10px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    text-align: center;
 }
 
-.login-logo {
-    font-size: 64px;
-    margin-bottom: 16px;
-}
-
-.login-button {
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    border-radius: 16px !important;
-}
-
-.login-privacy-note {
-    margin-top: 32px;
-    padding: 16px;
+.login-card-logo {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 32px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     border-radius: 16px;
-    background-color: rgba(255, 255, 255, 0.04) !important;
-    color: #9cb4ca;
-    /* Approx text.secondary */
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+}
+
+.login-button-ms {
+    height: 56px !important;
+    background-color: white !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    font-size: 1.05rem !important;
+    border-radius: 12px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.login-button-ms:hover {
+    background-color: #f8fafc !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.login-trust-footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+/* Responsividad */
+@media (max-width: 960px) {
+    .login-layout {
+        flex-direction: column;
+        padding-top: 60px;
+        padding-bottom: 60px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .login-info-side {
+        padding-right: 0;
+        margin-bottom: 60px;
+        align-items: center;
+    }
+
+    .login-subtitle {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .login-benefits-list {
+        align-items: center;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }

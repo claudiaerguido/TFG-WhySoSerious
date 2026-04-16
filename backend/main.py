@@ -1,4 +1,5 @@
 import os
+from datetime import date, timedelta
 from typing import Literal
 from dotenv import load_dotenv
 
@@ -80,7 +81,6 @@ class MemberProjectRequest(BaseModel):
 
 class SettingsRequest(BaseModel):
     fiscal_year_start_month: int
-    current_fiscal_year: int
 
 
 # ==========================================
@@ -121,16 +121,30 @@ def _check_project_access(email: str, role: str, project_id: int) -> bool:
     return res.data is not None
 
 
-def _get_fiscal_year_range(start_month: int, fy_year: int):
-    """Calcula el rango de fechas para el año fiscal."""
-    from datetime import date, timedelta
-    if start_month == 1:
-        start = date(fy_year, 1, 1)
-        end = date(fy_year, 12, 31)
+def _get_fiscal_year_range(start_month: int, offset: int = 0):
+    """
+    Calcula el rango de fechas para un año fiscal.
+    offset=0: Año fiscal actual.
+    offset=-1: Año fiscal anterior.
+    """
+    today = date.today()
+    
+    # Determinamos el año base según si hemos pasado el mes de inicio
+    if today.month >= start_month:
+        base_year = today.year
     else:
-        start = date(fy_year - 1, start_month, 1)
-        end = date(fy_year, start_month, 1) - timedelta(days=1)
-    return start.isoformat(), end.isoformat()
+        base_year = today.year - 1
+        
+    fy_start_year = base_year + offset
+        
+    start = date(fy_start_year, start_month, 1)
+    if start_month == 1:
+        end = date(fy_start_year, 12, 31)
+    else:
+        # El ciclo termina el año siguiente, el día anterior al inicio del nuevo ciclo
+        end = date(fy_start_year + 1, start_month, 1) - timedelta(days=1)
+        
+    return start.isoformat(), end.isoformat(), fy_start_year
 
 
 def _check_team_access(email: str, role: str, team_id: int) -> bool:
@@ -417,15 +431,18 @@ async def get_settings(request: Request):
     
     # Valores por defecto si no existen
     month = int(db_sett.get("fiscal_year_start_month", 1))
-    year = int(db_sett.get("current_fiscal_year", 2026))
     
-    start_date, end_date = _get_fiscal_year_range(month, year)
+    start_date, end_date, auto_year = _get_fiscal_year_range(month, offset=0)
+    prev_start, prev_end, prev_year = _get_fiscal_year_range(month, offset=-1)
     
     return JSONResponse({
         "fiscal_year_start_month": month,
-        "current_fiscal_year": year,
+        "current_fiscal_year": auto_year,
         "fy_start_date": start_date,
-        "fy_end_date": end_date
+        "fy_end_date": end_date,
+        "prev_fiscal_year": prev_year,
+        "prev_fy_start_date": prev_start,
+        "prev_fy_end_date": prev_end
     })
 
 @app.post("/api/admin/settings")
@@ -438,8 +455,7 @@ async def update_settings(request: Request, body: SettingsRequest):
         return JSONResponse({"error": "Se requiere rol de Administrador"}, status_code=403)
         
     success = save_org_settings(get_supabase_client(), {
-        "fiscal_year_start_month": body.fiscal_year_start_month,
-        "current_fiscal_year": body.current_fiscal_year
+        "fiscal_year_start_month": body.fiscal_year_start_month
     })
     return {"status": "success" if success else "error"}
 

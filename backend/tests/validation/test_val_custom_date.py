@@ -1,3 +1,6 @@
+# Tipo: Validación
+# Requisitos cubiertos: RF13, RF14
+# Objetivo: Verificar que el sistema permite filtrar y visualizar la información por rango de fechas.
 """
 7. Test de validación de filtro por fechas (test_val_custom_date.py)
 
@@ -11,7 +14,11 @@ from backend.services.risk_service import get_project_tactical_risk
 @patch("backend.services.risk_service.get_supabase_client")
 @patch("backend.services.risk_service.fetch_project_members")
 def test_validation_custom_date_range(mock_members, mock_db_getter):
-    """11. Validación de filtro por fechas personalizadas (Priorización SQL)."""
+    """
+    REQ: RF13 y RF14. Validación del uso de rangos temporales en la consulta analítica.
+    DEFINICIÓN: El usuario puede filtrar la información por un periodo personalizado para observar la evolución o estado en fechas concretas.
+    VALIDACIÓN: Se comprueba que al llamar al servicio con fechas explícitas, la consulta resultante al ORM (Supabase) inyecta correctamente los filtros `gte` y `lte` sobre el campo `message_timestamp`.
+    """
     mock_supabase = MagicMock()
     mock_db_getter.return_value = mock_supabase
     
@@ -45,4 +52,4 @@ def test_validation_custom_date_range(mock_members, mock_db_getter):
     
     # Comprobar aserción de que construimos el SQL final mediante ORM con el GTE y LTE de Supabase
     mock_in.gte.assert_called_with("message_timestamp", "2026-01-01")
-    mock_gte.lte.assert_called_with("message_timestamp", "2026-03-31")
+    mock_gte.lte.assert_called_with("message_timestamp", "2026-03-31T23:59:59.999Z")

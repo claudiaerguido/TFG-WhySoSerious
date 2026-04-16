@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
     const scores = workspacesWithRisk.map(w => w.pct).filter(v => v !== undefined);
     const globalRisk = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
-    const globalLevel = globalRisk === null ? null : globalRisk >= 66 ? "Rojo" : globalRisk >= 33 ? "Amarillo" : "Verde";
+    const globalLevel = globalRisk === null ? null : globalRisk >= 35 ? "Rojo" : globalRisk >= 20 ? "Amarillo" : "Verde";
 
     const today = new Date();
     const dateStr = today.toLocaleDateString("es-ES", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -120,11 +120,15 @@ export default function DashboardPage() {
                 </Box>
             </Box>
 
-            {isLoadingWs && (
-                <Alert severity="info" className="dashboard-loading-alert" sx={{ mb: 3 }}>
-                    Cargando métricas de la organización...
-                </Alert>
-            )}
+            {/* Leyenda de Umbrales Global */}
+            <Alert severity="info" sx={{ mb: 3, borderRadius: 2, bgcolor: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.1)' }}>
+                <Typography variant="caption" fontWeight={700} sx={{ display: 'block', mb: 0.5 }}>Configuración de umbrales de riesgo:</Typography>
+                <Stack direction="row" spacing={3}>
+                    <Typography variant="caption" color="#16a34a" fontWeight={700}>🟢 Bajo (0-20%): Sin señales relevantes</Typography>
+                    <Typography variant="caption" color="#b45309" fontWeight={700}>🟡 Moderado (20-35%): Requiere seguimiento</Typography>
+                    <Typography variant="caption" color="#dc2626" fontWeight={700}>🔴 Alto (&gt;35%): Revisión prioritaria</Typography>
+                </Stack>
+            </Alert>
 
             {/* Top Row: KPI cards */}
             <Grid container spacing={2} className="dashboard-grid-container" sx={{ mb: 4, alignItems: 'stretch' }}>

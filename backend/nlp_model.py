@@ -5,6 +5,7 @@ import torch
 import numpy as np
 import json
 import os
+import re
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # ==========================================
@@ -19,8 +20,10 @@ THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "thresholds_phaseB.jso
 BASELINE_MODEL_ID = "nlptown/bert-base-multilingual-uncased-sentiment"
 
 # Etiquetas del modelo de emociones
-# Nota: TRISTEZA es informativa y no se usa para el cálculo del riesgo táctico.
 LABELS = ["TRISTEZA", "ESTRES_ANSIEDAD", "ENFADO_IRRITACION", "SOBRECARGA_URGENCIA", "CANSANCIO_FATIGA", "POSITIVO_ALIVIO", "NEUTRO"]
+
+# Núcleo Operativo del TFG (Señales de Riesgo Psicosocial)
+OPERATIVE_CORE = ["ESTRES_ANSIEDAD", "SOBRECARGA_URGENCIA", "CANSANCIO_FATIGA"]
 
 class NLPModel:
     def __init__(self):
@@ -51,8 +54,9 @@ class NLPModel:
         except Exception as e:
             print(f"⚠️ Error cargando baseline: {e}")
 
-        # 3. Carga de umbrales dinámicos (una sola vez)
+        # 3. Carga de umbrales dinámicos y reporte de inicio
         self.thresholds = self._load_thresholds()
+        print(f"📊 Umbrales de Calibración Estratégica: {self.thresholds}")
 
     def _load_thresholds(self):
         """Carga los umbrales dinámicos desde el archivo config."""
@@ -66,7 +70,7 @@ class NLPModel:
             return default
 
     def predict(self, text: str):
-        """Predicción multilabel de emociones."""
+        """Predicción multilabel de emociones con salvaguarda para el núcleo operativo."""
         if not self.model or not self.tokenizer:
             return self._get_fallback_predict()
 
@@ -74,19 +78,52 @@ class NLPModel:
             inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=128, padding=True)
             with torch.no_grad():
                 outputs = self.model(**inputs)
-                # Conversión robusta de tensores
                 logits = outputs.logits.detach().cpu().numpy()[0]
             
-            # Sigmoide para probabilidades independientes
             probs = 1 / (1 + np.exp(-logits)) 
+            results = {label: float(probs[i]) for i, label in enumerate(LABELS)}
             
-            results = {}
-            flags = []
-            for i, label in enumerate(LABELS):
-                prob = float(probs[i])
-                results[label] = prob
-                if prob >= self.thresholds.get(label, 0.5):
-                    flags.append(label)
+            # 1. Cálculo de etiquetas que superan el umbral (Alta Estabilidad)
+            detected = [label for label, prob in results.items() if prob >= self.thresholds.get(label, 0.5)]
+            flags = [l for l in detected if l in OPERATIVE_CORE]
+            
+            # 3. SALVAGUARDA QUIRÚRGICA: Rescate de autodeclaraciones explícitas
+            # Solo se aplica si el modelo ha neutralizado la frase pero el texto es literal.
+            text_lower = text.lower()
+            SAFEGUARDS = {
+                "ESTRES_ANSIEDAD": [
+                    r"\b(estoy|me siento|llevo|ando).*(estrés|estres)", 
+                    r"\b(estoy|me siento|ando).*agobiad", 
+                    r"\b(tengo|siento).*ansiedad"
+                ],
+                "SOBRECARGA_URGENCIA": [
+                    r"\bno llego\b", r"\bno doy abasto\b", 
+                    r"\b(tengo|llevo).*mucha.*carga", 
+                    r"\bse me.*junta.*trabajo", 
+                    r"\b(estoy|tengo).*sobrecarga"
+                ],
+                "CANSANCIO_FATIGA": [
+                    r"\b(estoy|me siento|ando).*cansad", 
+                    r"\b(estoy|me siento).*agotad", 
+                    r"\b(estoy|me siento).*sin energía"
+                ]
+            }
+
+            for label, patterns in SAFEGUARDS.items():
+                if label not in flags:
+                    for pattern in patterns:
+                        if re.search(pattern, text_lower):
+                            # Rescate directo tras validación regex del patrón de autodeclaración
+                            flags.append(label)
+                            
+                            # COHERENCIA ARQUITECTÓNICA: Elevamos el score para asegurar que 
+                            # la persistencia y el motor de riesgo vean la señal.
+                            target_threshold = self.thresholds.get(label, 0.5)
+                            results[label] = max(results[label], target_threshold)
+                            break
+
+            # Limpiar duplicados y fallback a neutro
+            flags = list(dict.fromkeys(flags)) or ["NEUTRO"]
 
             return {
                 "labels": results, 

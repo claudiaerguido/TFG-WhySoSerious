@@ -16,7 +16,7 @@ import { useRiskFilters } from "../../hooks/useRiskFilters";
 import "./EmployeeProfilePage.css";
 
 const DAY_OPTIONS = [1, 7, 30, 60];
-const DAY_LABEL = { 1: "24h", 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual" };
+const DAY_LABEL = { 1: "24h", 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual", "fiscal-prev": "FY Anterior" };
 
 export default function EmployeeProfilePage() {
     const { email } = useParams();
@@ -91,7 +91,7 @@ export default function EmployeeProfilePage() {
             {/* Controles */}
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                    Periodo: {rangeMode === "fiscal" ? "FY Actual" : rangeMode === "custom" ? "Personalizado" : (days === 1 ? "Solo hoy" : `últimos ${days} días`)}
+                    Periodo: {rangeMode === "preset" ? DAY_LABEL[days] : DAY_LABEL[rangeMode]}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                     {rangeMode === "custom" && (
@@ -128,6 +128,7 @@ export default function EmployeeProfilePage() {
                             </ToggleButton>
                         ))}
                         <ToggleButton value="fiscal" sx={{ px: 2, fontSize: 12, textTransform: "none" }}>FY Actual</ToggleButton>
+                        <ToggleButton value="fiscal-prev" sx={{ px: 2, fontSize: 12, textTransform: "none" }}>FY Anterior</ToggleButton>
                         <ToggleButton value="custom" sx={{ px: 2, fontSize: 12, textTransform: "none" }}>Personalizado</ToggleButton>
                     </ToggleButtonGroup>
                 </Box>

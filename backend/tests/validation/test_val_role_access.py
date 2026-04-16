@@ -1,3 +1,6 @@
+# Tipo: Validación
+# Requisitos cubiertos: RF05, RF06, RF20, RF22, RNF02
+# Objetivo: Verificar que cada usuario solo puede acceder a la información correspondiente a su rol y ámbito de gestión.
 """
 1. Test de acceso por roles (test_val_role_access.py)
 
@@ -10,7 +13,11 @@ from backend.services.permissions_service import get_user_role, get_supabase_cli
 
 @patch("backend.services.permissions_service.get_supabase_client")
 def test_validation_role_access(mock_client):
-    """6. Validación de acceso por roles (Consulta real a BD simulada)."""
+    """
+    REQ: RF05 (Acceso mediante rol) y RNF02 (Seguridad RBAC - Parcial).
+    DEFINICIÓN: El sistema identifica el rol del usuario autenticado para determinar sus permisos básicos de acceso al panel.
+    VALIDACIÓN: Verifica que `get_user_role` mapea correctamente los datos de la base de datos a los roles internos (admin, manager, etc.), garantizando que la autenticación vincula al usuario con sus capacidades básicas.
+    """
     mock_supabase = MagicMock()
     mock_client.return_value = mock_supabase
     

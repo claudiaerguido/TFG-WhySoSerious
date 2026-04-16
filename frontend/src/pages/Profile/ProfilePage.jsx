@@ -52,7 +52,6 @@ const AdminSettingsSection = () => {
         const formData = new FormData(e.target);
         mutation.mutate({
             fiscal_year_start_month: parseInt(formData.get("month")),
-            current_fiscal_year: parseInt(formData.get("year")),
         });
     };
 
@@ -67,7 +66,7 @@ const AdminSettingsSection = () => {
                 <CardContent sx={{ p: 4 }}>
                     <form onSubmit={handleSave}>
                         <Grid container spacing={4} alignItems="flex-end">
-                            <Grid item xs={12} md={4}>
+                            <Grid item xs={12} md={6}>
                                 <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase' }}>
                                     Mes de Inicio Año Fiscal
                                 </Typography>
@@ -93,21 +92,7 @@ const AdminSettingsSection = () => {
                                 </Select>
                             </Grid>
 
-                            <Grid item xs={12} md={4}>
-                                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase' }}>
-                                    Año Fiscal Vigente (Actual)
-                                </Typography>
-                                <TextField
-                                    name="year"
-                                    type="number"
-                                    defaultValue={settings?.current_fiscal_year || 2026}
-                                    fullWidth
-                                    size="small"
-                                    sx={{ bgcolor: 'white', borderRadius: 2 }}
-                                />
-                            </Grid>
-
-                            <Grid item xs={12} md={4}>
+                            <Grid item xs={12} md={6}>
                                 <Button
                                     type="submit"
                                     variant="contained"
@@ -128,7 +113,7 @@ const AdminSettingsSection = () => {
                             {settings?.fy_start_date && (
                                 <Grid item xs={12}>
                                     <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                        Ciclo fiscal actual: del <strong>{settings.fy_start_date}</strong> al <strong>{settings.fy_end_date}</strong>.
+                                        Ciclo fiscal actual (calculado automáticamente): del <strong>{settings.fy_start_date}</strong> al <strong>{settings.fy_end_date}</strong> (FY {settings.current_fiscal_year}).
                                     </Typography>
                                 </Grid>
                             )}

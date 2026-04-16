@@ -23,12 +23,8 @@ export function useRiskFilters(initialDays = 7) {
             setRangeMode('custom');
         } else if (newValue === 'fiscal') {
             setRangeMode('fiscal');
-            if (fySettings) {
-                setCustomRange({
-                    start: fySettings.fy_start_date,
-                    end: fySettings.fy_end_date
-                });
-            }
+        } else if (newValue === 'fiscal-prev') {
+            setRangeMode('fiscal-prev');
         } else if (newValue) {
             setRangeMode('preset');
             setDays(newValue);
@@ -36,8 +32,17 @@ export function useRiskFilters(initialDays = 7) {
     };
 
     // Derived values for API consumption
-    const queryStart = (rangeMode === "custom" || rangeMode === "fiscal") ? customRange.start : null;
-    const queryEnd = (rangeMode === "custom" || rangeMode === "fiscal") ? customRange.end : null;
+    const queryStart =
+        rangeMode === "custom" ? customRange.start :
+            rangeMode === "fiscal" ? fySettings?.fy_start_date :
+                rangeMode === "fiscal-prev" ? fySettings?.prev_fy_start_date :
+                    null;
+
+    const queryEnd =
+        rangeMode === "custom" ? customRange.end :
+            rangeMode === "fiscal" ? fySettings?.fy_end_date :
+                rangeMode === "fiscal-prev" ? fySettings?.prev_fy_end_date :
+                    null;
 
     return {
         days,

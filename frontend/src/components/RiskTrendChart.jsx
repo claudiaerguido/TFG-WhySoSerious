@@ -7,8 +7,16 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip as RechartsTooltip,
+    ReferenceLine,
+    ReferenceArea
 } from "recharts";
-import { Typography, Paper, Box, Alert } from "@mui/material";
+import { Typography, Paper, Box, Alert, Stack } from "@mui/material";
+
+const getStatus = (value) => {
+    if (value >= 35) return { label: "Riesgo Alto", color: "#ef4444", bg: "rgba(239, 68, 68, 0.05)" };
+    if (value >= 20) return { label: "Riesgo Moderado", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.05)" };
+    return { label: "Riesgo Bajo", color: "#22c55e", bg: "rgba(34, 197, 94, 0.05)" };
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !label) return null;
@@ -16,6 +24,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     const point = payload?.[0]?.payload;
     const value = point?.risk_score_percentage ?? 0;
     const hasRealData = point?.hasRealData;
+    const { label: statusLabel, color: statusColor } = getStatus(value);
 
     return (
         <Paper
@@ -23,34 +32,32 @@ const CustomTooltip = ({ active, payload, label }) => {
             sx={{
                 p: 1.5,
                 bgcolor: "rgba(15, 23, 42, 0.96)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 2,
                 boxShadow: "0 10px 30px rgba(2, 6, 23, 0.28)",
             }}
         >
-            <Typography
-                variant="caption"
-                sx={{ color: "#94a3b8", display: "block", mb: 0.5 }}
-            >
+            <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", mb: 0.5 }}>
                 {label}
             </Typography>
 
-            {hasRealData ? (
-                <Typography variant="body2" fontWeight={700} sx={{ color: "#818cf8" }}>
-                    Riesgo: {value}%
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={700} sx={{ color: "#fff" }}>
+                    {value}%
                 </Typography>
-            ) : (
-                <>
-                    <Typography variant="body2" fontWeight={700} sx={{ color: "#818cf8" }}>
-                        Riesgo visual: {value}%
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{ color: "#cbd5e1", fontStyle: "italic" }}
-                    >
-                        No hay datos reales para este día
-                    </Typography>
-                </>
+                <Typography variant="caption" fontWeight={700} sx={{
+                    px: 1, py: 0.2, borderRadius: 1,
+                    bgcolor: `${statusColor}20`, color: statusColor,
+                    fontSize: 10, textTransform: 'uppercase'
+                }}>
+                    {statusLabel}
+                </Typography>
+            </Box>
+
+            {!hasRealData && (
+                <Typography variant="caption" sx={{ color: "#cbd5e1", fontStyle: "italic", display: 'block' }}>
+                    Dato interpolado (sin mensajes)
+                </Typography>
             )}
         </Paper>
     );
@@ -64,7 +71,6 @@ function buildContinuousSeries(data, startDate, endDate, days) {
 
     let startObj, endObj;
     if (startDate && endDate) {
-        // Enforce parsing as local dates matching YYYY-MM-DD
         const [sy, sm, sd] = startDate.split('-');
         const [ey, em, ed] = endDate.split('-');
         startObj = new Date(sy, sm - 1, sd);
@@ -130,7 +136,7 @@ function renderDot(props) {
             cx={cx}
             cy={cy}
             r={4}
-            fill="#f43f5e"
+            fill="#6366f1"
             stroke="#ffffff"
             strokeWidth={2}
             opacity={1}
@@ -138,54 +144,56 @@ function renderDot(props) {
     );
 }
 
-const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null, height = 260 }) => {
+const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null, height = 280 }) => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
     const processedData = useMemo(
         () => buildContinuousSeries(data, startDate, endDate, days),
         [data, startDate, endDate, days]
     );
 
     const hasAnyRealData = processedData.some((d) => d.hasRealData);
-    const hasMissingData = processedData.some((d) => !d.hasRealData);
 
     return (
         <Box sx={{ width: "100%" }}>
-            {!hasAnyRealData ? (
-                <Alert
-                    severity="info"
-                    sx={{
-                        mb: 2,
-                        borderRadius: 2,
-                        bgcolor: "#f8fafc",
-                        color: "#475569",
-                        "& .MuiAlert-icon": { color: "#64748b" },
-                    }}
-                >
-                    No hay datos en este rango. Se muestra una línea base solo como referencia visual.
-                </Alert>
-            ) : hasMissingData ? (
-                <Alert
-                    severity="info"
-                    sx={{
-                        mb: 2,
-                        borderRadius: 2,
-                        bgcolor: "#f8fafc",
-                        color: "#475569",
-                        "& .MuiAlert-icon": { color: "#64748b" },
-                    }}
-                >
-                    Algunos días no tienen datos; la gráfica mantiene continuidad visual con el último valor disponible.
-                </Alert>
-            ) : null}
+            <Stack direction="row" spacing={3} sx={{ mb: 2, px: 1 }}>
+                <Box>
+                    <Typography variant="caption" fontWeight={800} color="#22c55e" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e' }} />
+                        BAJO: 0-20%
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: 9 }}>Ausencia de señales relevantes</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="caption" fontWeight={800} color="#f59e0b" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                        MODERADO: 20-35%
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: 9 }}>Patrones que requieren seguimiento</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="caption" fontWeight={800} color="#ef4444" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                        ALTO: &gt;35%
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: 9 }}>Necesidad de revisión prioritaria</Typography>
+                </Box>
+            </Stack>
 
             <Box sx={{ width: "100%", height }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                         data={processedData}
-                        margin={{ top: 10, right: 12, left: -20, bottom: 0 }}
+                        margin={{ top: 20, right: 60, left: -20, bottom: 0 }}
                     >
+                        <ReferenceArea y1={0} y2={20} fill="#22c55e" fillOpacity={0.03} isFront={false} />
+                        <ReferenceArea y1={20} y2={35} fill="#f59e0b" fillOpacity={0.04} isFront={false} />
+                        <ReferenceArea y1={35} y2={100} fill="#ef4444" fillOpacity={0.04} isFront={false} />
+
                         <CartesianGrid
                             strokeDasharray="3 3"
-                            stroke="rgba(15, 23, 42, 0.06)"
+                            stroke="rgba(15, 23, 42, 0.04)"
                             vertical={false}
                         />
 
@@ -205,29 +213,46 @@ const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null,
                             fontSize={11}
                             tickFormatter={(v) => `${v}%`}
                             domain={[0, 100]}
-                            ticks={[0, 25, 50, 75, 100]}
+                            ticks={[0, 20, 35, 50, 75, 100]}
                             axisLine={false}
                             tickLine={false}
                         />
 
-                        <RechartsTooltip
-                            content={<CustomTooltip />}
-                            cursor={{ stroke: "rgba(129, 140, 248, 0.18)", strokeWidth: 1 }}
-                        />
+                        <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: "rgba(129, 140, 248, 0.18)", strokeWidth: 1 }} />
 
                         <Line
-                            type="linear"
+                            type="monotone"
                             dataKey="risk_score_percentage"
-                            stroke={hasAnyRealData ? "#818cf8" : "rgba(148, 163, 184, 0.6)"}
-                            strokeWidth={2.5}
+                            stroke={hasAnyRealData ? "#6366f1" : "rgba(148, 163, 184, 0.4)"}
+                            strokeWidth={3}
                             dot={renderDot}
-                            activeDot={{
-                                r: 5,
-                                fill: "#818cf8",
-                                stroke: "#ffffff",
-                                strokeWidth: 2,
-                            }}
+                            activeDot={{ r: 6, fill: "#6366f1", stroke: "#fff", strokeWidth: 2 }}
                             isAnimationActive={false}
+                        />
+
+                        {processedData.some(d => d.date === todayStr) && (
+                            <ReferenceLine
+                                x={todayStr}
+                                stroke="rgba(148, 163, 184, 0.4)"
+                                strokeWidth={1}
+                                strokeDasharray="4 4"
+                                label={{ value: 'Hoy', position: 'top', offset: 15, fill: '#94a3b8', fontSize: 10, fontWeight: 500 }}
+                            />
+                        )}
+
+                        <ReferenceLine
+                            y={20}
+                            stroke="#f59e0b"
+                            strokeDasharray="3 3"
+                            strokeOpacity={0.6}
+                            label={{ value: 'MODERADO (20%)', position: 'right', fill: '#d97706', fontSize: 9, fontWeight: 700, offset: 5 }}
+                        />
+                        <ReferenceLine
+                            y={35}
+                            stroke="#ef4444"
+                            strokeDasharray="3 3"
+                            strokeOpacity={0.6}
+                            label={{ value: 'ALTO (35%)', position: 'right', fill: '#dc2626', fontSize: 9, fontWeight: 700, offset: 5 }}
                         />
                     </LineChart>
                 </ResponsiveContainer>

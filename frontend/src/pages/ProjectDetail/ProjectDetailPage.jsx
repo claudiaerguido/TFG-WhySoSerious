@@ -31,7 +31,7 @@ import { useRiskFilters } from "../../hooks/useRiskFilters";
 import "./ProjectDetailPage.css";
 
 const DAY_OPTIONS = [1, 7, 30, 60];
-const DAY_LABEL = { 1: "Últimas 24h", 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual" };
+const DAY_LABEL = { 1: "Últimas 24h", 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual", "fiscal-prev": "FY Anterior" };
 
 function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange = {} }) {
   const { id: teamId } = useParams();
@@ -65,8 +65,10 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
     mutationFn: (pid) => addProjectMember(memberEmail, pid),
     onSuccess: () => {
       const numericId = Number(teamId);
-      queryClient.invalidateQueries({ queryKey: ["memberBreakdown", memberEmail, days] });
-      queryClient.invalidateQueries({ queryKey: ["teamRisk", numericId, days] });
+      // Invalidamos por prefijo para que afecte a todos los filtros de tiempo (7, 30, 60 días, etc.)
+      queryClient.invalidateQueries({ queryKey: ["memberBreakdown", memberEmail] });
+      queryClient.invalidateQueries({ queryKey: ["teamRisk", numericId] });
+      queryClient.invalidateQueries({ queryKey: ["projectRisk", numericId] });
       setSelectedProject("");
     },
   });
@@ -75,8 +77,10 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
     mutationFn: (pid) => removeProjectMember(memberEmail, pid),
     onSuccess: () => {
       const numericId = Number(teamId);
-      queryClient.invalidateQueries({ queryKey: ["memberBreakdown", memberEmail, days] });
-      queryClient.invalidateQueries({ queryKey: ["teamRisk", numericId, days] });
+      // Invalidamos por prefijo para que afecte a todos los filtros de tiempo
+      queryClient.invalidateQueries({ queryKey: ["memberBreakdown", memberEmail] });
+      queryClient.invalidateQueries({ queryKey: ["teamRisk", numericId] });
+      queryClient.invalidateQueries({ queryKey: ["projectRisk", numericId] });
     },
   });
 
@@ -363,7 +367,7 @@ export default function ProjectDetailPage() {
       {/* Controles de Acción (Periodo + Refrescar) */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Periodo: {rangeMode === "fiscal" ? "FY Actual" : rangeMode === "custom" ? "Personalizado" : (days === 1 ? "Solo hoy" : `últimos ${days} días`)}
+          Periodo: {rangeMode === "preset" ? DAY_LABEL[days] : DAY_LABEL[rangeMode]}
         </Typography>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           {rangeMode === "custom" && (
@@ -398,6 +402,7 @@ export default function ProjectDetailPage() {
               <ToggleButton key={d} value={d} sx={{ px: 2, fontSize: 13, textTransform: "none" }}>{DAY_LABEL[d]}</ToggleButton>
             ))}
             <ToggleButton value="fiscal" sx={{ px: 2, fontSize: 13, textTransform: "none" }}>FY Actual</ToggleButton>
+            <ToggleButton value="fiscal-prev" sx={{ px: 2, fontSize: 13, textTransform: "none" }}>FY Anterior</ToggleButton>
             <ToggleButton value="custom" sx={{ px: 2, fontSize: 13, textTransform: "none" }}>Personalizado</ToggleButton>
           </ToggleButtonGroup>
           <Button
