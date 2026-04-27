@@ -1,6 +1,6 @@
 # Tipo: Validación
-# Requisitos cubiertos: RF23, RNF10
-# Objetivo: Verificar la persistencia histórica de métricas agregadas y la integridad de los datos almacenados.
+# Requisitos cubiertos: RF18, RNF09
+# Objetivo: Verificar la persistencia histórica de métricas agregadas y la integridad básica de los datos almacenados.
 """
 5. Test de persistencia (test_val_persistence.py)
 
@@ -16,8 +16,8 @@ from backend.db_repository import save_risk_metrics
 @patch("backend.db_repository.DB_COLS", {"enfado_irritacion": "score_enfado"})
 def test_validation_persistence():
     """
-    REQ: RF23 (Perseverancia histórica) y RNF10 (Integridad de datos).
-    DEFINICIÓN: El sistema debe asegurar que las métricas calculadas se guardan de forma íntegra.
+    REQ: RF18 y RNF09.
+    DEFINICIÓN: El sistema debe conservar el histórico analítico con los campos técnicos necesarios y mantener una persistencia coherente.
     VALIDACIÓN: Se ejecuta la función de guardado y se verifica mediante mocks que la llamada al ORM contiene todos los campos obligatorios: email, ID de mensaje, fecha, puntuación y proyecto asociado.
     """
     mock_supabase = MagicMock()

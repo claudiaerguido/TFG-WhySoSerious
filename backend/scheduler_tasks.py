@@ -1,9 +1,4 @@
 import datetime
-from auth_graph_app import list_users, list_user_chats, list_chat_messages, list_chat_members, USER_CACHE
-from message_analyzer import analyze_message
-from db_client import get_supabase_client
-from db_repository import save_risk_metrics
-from services.risk_service import get_all_teams_and_projects_with_members
 
 TFG_FILTER = ".tfg@"
 TOP_MESSAGES_PER_CHAT = 50
@@ -44,6 +39,12 @@ def find_best_project(chat_members: list, all_projects: list) -> int:
 
 def run_nightly_analysis():
     """Proceso principal de análisis de organización."""
+    from auth_graph_app import list_users, list_user_chats, list_chat_messages, list_chat_members, USER_CACHE
+    from message_analyzer import analyze_message
+    from db_client import get_supabase_client
+    from db_repository import save_risk_metrics
+    from services.risk_service import get_all_teams_and_projects_with_members
+
     start_time = datetime.datetime.now()
     print(f"🌙 Iniciando análisis nocturno [{start_time}]")
     

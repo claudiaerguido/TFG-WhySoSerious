@@ -30,8 +30,8 @@ import RiskTrendChart from "../../components/RiskTrendChart";
 import { useRiskFilters } from "../../hooks/useRiskFilters";
 import "./ProjectDetailPage.css";
 
-const DAY_OPTIONS = [1, 7, 30, 60];
-const DAY_LABEL = { 1: "Últimas 24h", 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual", "fiscal-prev": "FY Anterior" };
+const DAY_OPTIONS = [7, 30, 60];
+const DAY_LABEL = { 7: "7 Días", 30: "30 Días", 60: "60 Días", "fiscal": "FY Actual", "fiscal-prev": "FY Anterior" };
 
 function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange = {} }) {
   const { id: teamId } = useParams();
@@ -448,10 +448,12 @@ export default function ProjectDetailPage() {
           )}
         </Box>
 
-        {/* BLOQUE: Tendencia (Línea fina) */}
-        <Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Box className="member-list-section" sx={{ mt: 2 }}>
+          <Typography variant="h6" className="member-list-title">
             Evolución diaria por mensajes
+          </Typography>
+          <Typography variant="body2" className="member-list-subtitle" sx={{ mb: 3 }}>
+            Histórico temporal del nivel de estrés.
           </Typography>
           <Card sx={{ bgcolor: "transparent", backgroundImage: "none", border: "none", boxShadow: "none" }}>
             <CardContent sx={{ p: 0, pb: "0 !important" }}>

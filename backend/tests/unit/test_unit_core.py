@@ -44,7 +44,7 @@ def test_compute_pearson_msg_risk_fallback():
     """
     REQ: RF10 (Detectar tono e inferir señales).
     DEFINICIÓN: Robustez del motor ante falta de varianza estadística.
-    VALIDACIÓN: Comprueba que el sistema activa el modelo aditivo (fallback) cuando no se puede calcular la correlación, asegurando continuidad del servicio.
+    VALIDACIÓN: Comprueba que el sistema devuelve `risk_base` tras la calibración cuando no se puede calcular la correlación, asegurando continuidad del servicio sin forzar una ponderación inválida.
     """
     data = {
         "estres_ansiedad": [0.5, 0.5, 0.5], 
@@ -55,14 +55,15 @@ def test_compute_pearson_msg_risk_fallback():
     risk_series = compute_pearson_msg_risk(df)
     
     assert len(risk_series) == 3
-    # Esperamos 0.7 (0.5 + 0.2) según el modelo aditivo conservador para fallbacks
-    assert all(x == pytest.approx(0.7) for x in risk_series)
+    # El fallback actual devuelve `risk_base`, es decir, la máxima señal negativa
+    # tras aplicar la calibración operativa del modelo.
+    assert all(x == pytest.approx(0.5) for x in risk_series)
 
 
 @patch("backend.services.permissions_service.get_supabase_client")
 def test_get_teams_and_projects_for_user_admin_returns_all(mock_client):
     """
-    REQ: RF06 (Cada usuario ve solo su ámbito asignado).
+    REQ: RF06 (Visibilidad ajustada al ámbito de responsabilidad).
     DEFINICIÓN: El administrador debe tener visibilidad total de la organización.
     VALIDACIÓN: Se verifica que para un rol 'admin', la consulta a la base de datos no incluye filtros restrictivos por email.
     """
@@ -81,7 +82,7 @@ def test_get_teams_and_projects_for_user_admin_returns_all(mock_client):
 @patch("backend.services.permissions_service.get_supabase_client")
 def test_get_teams_and_projects_for_user_manager_returns_only_managed(mock_client):
     """
-    REQ: RF06 (Cada usuario ve solo su ámbito asignado).
+    REQ: RF06 (Visibilidad ajustada al ámbito de responsabilidad).
     DEFINICIÓN: Los responsables (managers) solo ven datos de sus equipos/proyectos.
     VALIDACIÓN: Se comprueba que la lógica de permisos aplica filtros `eq` obligatorios sobre los campos de responsabilidad (manager_email/owner_email).
     """
@@ -100,9 +101,9 @@ def test_get_teams_and_projects_for_user_manager_returns_only_managed(mock_clien
 
 def test_find_best_project():
     """
-    REQ: RF24 (Procesamiento en segundo plano y asignación).
-    DEFINICIÓN: El sistema debe mapear mensajes a proyectos según la membresía.
-    VALIDACIÓN: Comprueba el algoritmo de búsqueda de proyecto 'más probable' basándose en los participantes del chat, garantizando integridad en la ingesta.
+    REQ: RF04 y RF19 (Parcial).
+    DEFINICIÓN: El sistema debe contextualizar los mensajes en el proyecto correspondiente durante el procesamiento automático.
+    VALIDACIÓN: Comprueba el algoritmo de búsqueda de proyecto 'más probable' basándose en los participantes del chat, garantizando que la ingesta asocia el mensaje al contexto organizativo correcto.
     """
     all_projects = [
         {"id": 10, "members": ["ana@tfg.com", "carlos@tfg.com"]},

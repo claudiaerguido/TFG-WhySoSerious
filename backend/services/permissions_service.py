@@ -48,12 +48,23 @@ def get_teams_and_projects_for_user(email: str, role: str) -> Dict[str, List[Dic
             return {"teams": res_t.data or [], "projects": res_p.data or []}
         
         # 2. Acceso por responsabilidad (Managers y Employees)
-        # Un Manager funcional solo ve lo que gestiona, no toda la empresa.
-        res_t = supabase.table("teams").select("id, name").eq("manager_email", email).execute()
+        # Un Manager funcional solo ve lo que gestiona o gestionaba
+        res_t_hist = supabase.table("team_manager_history").select("team_id, teams(name)").eq("manager_email", email).execute()
+        
+        # Eliminar duplicados en caso de que haya gestionado el mismo equipo en distintos periodos
+        unique_teams = {}
+        for r in (res_t_hist.data or []):
+            if r["team_id"] not in unique_teams and r.get("teams"):
+                unique_teams[r["team_id"]] = {
+                    "id": r["team_id"],
+                    "name": r["teams"]["name"]
+                }
+        teams_list = list(unique_teams.values())
+        
         res_p = supabase.table("projects").select("id, name").eq("owner_email", email).execute()
         
         return {
-            "teams": res_t.data or [], 
+            "teams": teams_list, 
             "projects": res_p.data or []
         }
     except Exception as e:

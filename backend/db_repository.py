@@ -6,10 +6,24 @@ from logic.risk_model import DB_COLS, TARGET_LABELS
 
 # ── Miembros y Estructura ──────────────────────────────────────────────────
 
-def _fetch_members_from_table(supabase: Client, table_name: str, id_column: str, id_value: int) -> List[Dict[str, Any]]:
+def _fetch_members_from_table(supabase: Client, table_name: str, id_column: str, id_value: int, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
     """Helper genérico para obtener miembros cruzando una tabla con 'org_users'."""
     try:
-        res_memb = supabase.table(table_name).select("user_email").eq(id_column, id_value).execute()
+        q = supabase.table(table_name).select("user_email").eq(id_column, id_value)
+        
+        # Filtro temporal SCD:
+        # Si no hay start_date ni end_date de la query, queremos los miembros actuales (end_date IS NULL)
+        if not start_date and not end_date:
+            q = q.is_("end_date", "null")
+        else:
+            # Si piden un rango temporal [start_date, end_date]
+            # El miembro estaba activo si: su start_date <= query.end_date Y (su end_date >= query.start_date O es nulo)
+            effective_end = end_date or datetime.utcnow().isoformat()
+            q = q.lte("start_date", effective_end)
+            if start_date:
+                q = q.or_(f"end_date.gte.{start_date},end_date.is.null")
+
+        res_memb = q.execute()
         emails = [r["user_email"] for r in (res_memb.data or [])]
         if not emails: return []
 
@@ -37,18 +51,28 @@ def fetch_user_metadata(supabase: Client, user_email: str) -> Dict[str, Any]:
         print(f"⚠️ fetch_user_metadata error [{user_email}]: {e}")
         return {}
 
-def fetch_team_members(supabase: Client, team_id: int) -> List[Dict[str, Any]]:
+def fetch_team_members(supabase: Client, team_id: int, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
     """Obtiene los integrantes de un equipo."""
-    return _fetch_members_from_table(supabase, "user_teams", "team_id", team_id)
+    return _fetch_members_from_table(supabase, "user_teams", "team_id", team_id, start_date, end_date)
 
-def fetch_project_members(supabase: Client, project_id: int) -> List[Dict[str, Any]]:
+def fetch_project_members(supabase: Client, project_id: int, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
     """Obtiene los integrantes de un proyecto."""
-    return _fetch_members_from_table(supabase, "project_members", "project_id", project_id)
+    return _fetch_members_from_table(supabase, "project_members", "project_id", project_id, start_date, end_date)
 
-def fetch_user_projects(supabase: Client, user_email: str) -> List[Dict[str, Any]]:
+def fetch_user_projects(supabase: Client, user_email: str, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
     """Lista los proyectos donde participa un usuario."""
     try:
-        res = supabase.table("project_members").select("project_id, projects(name)").eq("user_email", user_email).execute()
+        q = supabase.table("project_members").select("project_id, projects(name)").eq("user_email", user_email)
+        
+        if not start_date and not end_date:
+            q = q.is_("end_date", "null")
+        else:
+            effective_end = end_date or datetime.utcnow().isoformat()
+            q = q.lte("start_date", effective_end)
+            if start_date:
+                q = q.or_(f"end_date.gte.{start_date},end_date.is.null")
+                
+        res = q.execute()
         return res.data or []
     except Exception as e:
         print(f"⚠️ fetch_user_projects error: {e}")
@@ -59,9 +83,18 @@ def fetch_user_projects(supabase: Client, user_email: str) -> List[Dict[str, Any
 def add_user_to_project(supabase: Client, user_email: str, project_id: int) -> bool:
     """Asocia un usuario a un proyecto (Evita duplicados vía upsert)."""
     try:
+        # Al añadir, aseguramos que end_date sea NULL (por si vuelve a entrar) y start_date sea actual
+        # En vez de upsert directo, comprobamos si ya está activo. Para simplificar, hacemos upsert
+        # asumiendo que on_conflict actualice los datos. 
+        # Supabase no soporta on_conflict parcial en upsert sin configurarlo bien, 
+        # así que es mejor buscar primero si existe un registro cerrado.
+        
+        # En la práctica, el upsert actualiza el end_date a null.
         supabase.table("project_members").upsert({
             "user_email": user_email,
-            "project_id": project_id
+            "project_id": project_id,
+            "start_date": datetime.utcnow().isoformat(),
+            "end_date": None
         }, on_conflict="user_email,project_id").execute()
         return True
     except Exception as e:
@@ -71,7 +104,10 @@ def add_user_to_project(supabase: Client, user_email: str, project_id: int) -> b
 def remove_user_from_project(supabase: Client, user_email: str, project_id: int) -> bool:
     """Desasocia un usuario de un proyecto."""
     try:
-        supabase.table("project_members").delete().eq("user_email", user_email).eq("project_id", project_id).execute()
+        # SCD: En lugar de borrar, ponemos fecha de fin
+        supabase.table("project_members").update({
+            "end_date": datetime.utcnow().isoformat()
+        }).eq("user_email", user_email).eq("project_id", project_id).is_("end_date", "null").execute()
         return True
     except Exception as e:
         print(f"⚠️ remove_user_from_project error: {e}")

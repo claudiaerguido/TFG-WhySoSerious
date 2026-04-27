@@ -1,5 +1,5 @@
 # Tipo: Validación
-# Requisitos cubiertos: RF13, RF14
+# Requisitos cubiertos: RF14
 # Objetivo: Verificar que el sistema permite filtrar y visualizar la información por rango de fechas.
 """
 7. Test de validación de filtro por fechas (test_val_custom_date.py)
@@ -15,7 +15,7 @@ from backend.services.risk_service import get_project_tactical_risk
 @patch("backend.services.risk_service.fetch_project_members")
 def test_validation_custom_date_range(mock_members, mock_db_getter):
     """
-    REQ: RF13 y RF14. Validación del uso de rangos temporales en la consulta analítica.
+    REQ: RF14. Validación del uso de rangos temporales en la consulta analítica.
     DEFINICIÓN: El usuario puede filtrar la información por un periodo personalizado para observar la evolución o estado en fechas concretas.
     VALIDACIÓN: Se comprueba que al llamar al servicio con fechas explícitas, la consulta resultante al ORM (Supabase) inyecta correctamente los filtros `gte` y `lte` sobre el campo `message_timestamp`.
     """

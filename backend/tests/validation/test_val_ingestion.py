@@ -1,6 +1,6 @@
 # Tipo: Validación
-# Requisitos cubiertos: RF01, RF02, RF10, RF24, RNF06, RNF08
-# Objetivo: Verificar la extracción, procesamiento e ingesta de mensajes sin bloquear la interacción del usuario.
+# Requisitos cubiertos: RF04, RF19 (Parcial)
+# Objetivo: Verificar la asignación contextual de mensajes durante la ingesta automática.
 """
 4. Test de ingesta y clasificación (test_val_ingestion.py)
 
@@ -12,9 +12,9 @@ from backend.scheduler_tasks import find_best_project
 
 def test_validation_ingestion_assignment():
     """
-    REQ: RF10 (Parcial) y RF24 (Asignación de contexto).
-    DEFINICIÓN: El sistema debe asignar cada mensaje extraído a un proyecto o contexto global según los participantes.
-    VALIDACIÓN: Comprueba la lógica de mapeo en `find_best_project`, validando que los chats se clasifican correctamente según la membresía de los participantes, garantizando la integridad del pipeline de datos.
+    REQ: RF04 y RF19 (Parcial).
+    DEFINICIÓN: El sistema debe contextualizar cada mensaje en el ámbito organizativo correspondiente durante el procesamiento automático.
+    VALIDACIÓN: Comprueba la lógica de mapeo en `find_best_project`, validando que los chats se clasifican correctamente según la membresía de los participantes y que el mensaje se asocia a un proyecto o al contexto global.
     """
     all_projects = [{"id": 100, "members": ["u1@tfg.com", "u2@tfg.com"]}]
     

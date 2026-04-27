@@ -8,7 +8,8 @@ import {
     CartesianGrid,
     Tooltip as RechartsTooltip,
     ReferenceLine,
-    ReferenceArea
+    ReferenceArea,
+    Brush
 } from "recharts";
 import { Typography, Paper, Box, Alert, Stack } from "@mui/material";
 
@@ -185,7 +186,7 @@ const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null,
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                         data={processedData}
-                        margin={{ top: 20, right: 60, left: -20, bottom: 0 }}
+                        margin={{ top: 20, right: 60, left: 10, bottom: 0 }}
                     >
                         <ReferenceArea y1={0} y2={20} fill="#22c55e" fillOpacity={0.03} isFront={false} />
                         <ReferenceArea y1={20} y2={35} fill="#f59e0b" fillOpacity={0.04} isFront={false} />
@@ -246,6 +247,14 @@ const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null,
                             strokeDasharray="3 3"
                             strokeOpacity={0.6}
                             label={{ value: 'MODERADO (20%)', position: 'right', fill: '#d97706', fontSize: 9, fontWeight: 700, offset: 5 }}
+                        />
+                        <Brush 
+                            dataKey="date" 
+                            height={25} 
+                            stroke="#6366f1" 
+                            fill="rgba(99, 102, 241, 0.05)" 
+                            travellerWidth={10} 
+                            tickFormatter={formatDateLabel} 
                         />
                         <ReferenceLine
                             y={35}

@@ -1,5 +1,4 @@
 import os
-from datetime import date, timedelta
 from typing import Literal
 from dotenv import load_dotenv
 
@@ -32,6 +31,7 @@ from services.risk_service import (
 )
 from db_client import get_supabase_client
 from db_repository import fetch_org_settings, save_org_settings
+from utils.date_ranges import get_fiscal_year_range
 
 # ==========================================
 # 1. CONFIGURACIÓN INICIAL & MIDDLEWARE
@@ -44,9 +44,27 @@ app = FastAPI(title="WhySoSerious Backend API", version="1.1.0")
 
 # --- SCHEDULER NOCTURNO ---
 scheduler = BackgroundScheduler()
-# Ejecutar cada noche a las 02:00 AM para analizar la organización
-scheduler.add_job(run_nightly_analysis, trigger="cron", hour=2, minute=0)
-scheduler.start()
+
+
+def _ensure_scheduler_started() -> None:
+    """Inicia el scheduler una sola vez cuando la app arranca realmente."""
+    if not scheduler.get_jobs():
+        scheduler.add_job(run_nightly_analysis, trigger="cron", hour=2, minute=0)
+    if not scheduler.running:
+        scheduler.start()
+
+
+@app.on_event("startup")
+async def _startup_scheduler():
+    """Evita efectos laterales al importar `main` durante los tests."""
+    _ensure_scheduler_started()
+
+
+@app.on_event("shutdown")
+async def _shutdown_scheduler():
+    """Libera el scheduler al detener la app."""
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
 
 # --- SEGURIDAD (CORS) ---
 # Permitimos que el frontend (dev y prod local) acceda a la API con credenciales.
@@ -121,32 +139,6 @@ def _check_project_access(email: str, role: str, project_id: int) -> bool:
     return res.data is not None
 
 
-def _get_fiscal_year_range(start_month: int, offset: int = 0):
-    """
-    Calcula el rango de fechas para un año fiscal.
-    offset=0: Año fiscal actual.
-    offset=-1: Año fiscal anterior.
-    """
-    today = date.today()
-    
-    # Determinamos el año base según si hemos pasado el mes de inicio
-    if today.month >= start_month:
-        base_year = today.year
-    else:
-        base_year = today.year - 1
-        
-    fy_start_year = base_year + offset
-        
-    start = date(fy_start_year, start_month, 1)
-    if start_month == 1:
-        end = date(fy_start_year, 12, 31)
-    else:
-        # El ciclo termina el año siguiente, el día anterior al inicio del nuevo ciclo
-        end = date(fy_start_year + 1, start_month, 1) - timedelta(days=1)
-        
-    return start.isoformat(), end.isoformat(), fy_start_year
-
-
 def _check_team_access(email: str, role: str, team_id: int) -> bool:
     """Verifica si el usuario tiene permisos para acceder a un equipo."""
     if role in ["admin", "manager"]: 
@@ -156,14 +148,13 @@ def _check_team_access(email: str, role: str, team_id: int) -> bool:
     if not supabase: 
         return False
         
-    # El manager asignado al equipo siempre tiene acceso
-    res = supabase.table("teams") \
+    # El manager asignado al equipo (histórico o actual) siempre tiene acceso
+    res = supabase.table("team_manager_history") \
         .select("id") \
-        .eq("id", team_id) \
+        .eq("team_id", team_id) \
         .eq("manager_email", email) \
-        .maybe_single() \
         .execute()
-    return res.data is not None
+    return len(res.data or []) > 0
 
 
 def _can_manage_user(admin_email: str, admin_role: str, target_user_email: str) -> bool:
@@ -178,9 +169,9 @@ def _can_manage_user(admin_email: str, admin_role: str, target_user_email: str) 
     supabase = get_supabase_client()
     if not supabase: return False
 
-    # 1. Obtener equipos gestionados por el manager
-    managed_teams = supabase.table("teams").select("id").eq("manager_email", admin_email).execute()
-    team_ids = [t["id"] for t in (managed_teams.data or [])]
+    # 1. Obtener equipos gestionados por el manager (histórico o actual)
+    managed_teams = supabase.table("team_manager_history").select("team_id").eq("manager_email", admin_email).execute()
+    team_ids = [t["team_id"] for t in (managed_teams.data or [])]
     if not team_ids: return False
 
     # 2. Verificar si el objetivo está en alguno de esos equipos
@@ -432,8 +423,8 @@ async def get_settings(request: Request):
     # Valores por defecto si no existen
     month = int(db_sett.get("fiscal_year_start_month", 1))
     
-    start_date, end_date, auto_year = _get_fiscal_year_range(month, offset=0)
-    prev_start, prev_end, prev_year = _get_fiscal_year_range(month, offset=-1)
+    start_date, end_date, auto_year = get_fiscal_year_range(month, offset=0)
+    prev_start, prev_end, prev_year = get_fiscal_year_range(month, offset=-1)
     
     return JSONResponse({
         "fiscal_year_start_month": month,

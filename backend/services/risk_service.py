@@ -42,7 +42,7 @@ def _compute_daily_trend_from_df(df: pd.DataFrame) -> List[Dict[str, Any]]:
 
     df = df.copy()
     df["msg_risk"] = compute_pearson_msg_risk(df)
-    df["date"] = pd.to_datetime(df["message_timestamp"]).dt.date
+    df["date"] = pd.to_datetime(df["message_timestamp"], format='ISO8601', utc=True).dt.date
 
     trend = (
         df.groupby("date")["msg_risk"]
@@ -129,7 +129,7 @@ def get_team_global_risk(team_id: int, days: int = 7, start_date: str = None, en
     if not supabase:
         return {"status": "error", "message": "No se pudo conectar a Supabase"}
 
-    members = fetch_team_members(supabase, team_id)
+    members = fetch_team_members(supabase, team_id, start_date=start_date, end_date=end_date)
     if not members:
         return {
             "status": "ok",
@@ -184,7 +184,7 @@ def get_project_tactical_risk(project_id: int, days: int = 7, start_date: str = 
     if not supabase:
         return {"status": "error", "message": "No se pudo conectar a Supabase"}
 
-    members = fetch_project_members(supabase, project_id)
+    members = fetch_project_members(supabase, project_id, start_date=start_date, end_date=end_date)
     if not members:
         return {
             "status": "ok",
@@ -240,7 +240,7 @@ def get_member_projects_breakdown(user_email: str, days: int = 7, start_date: st
     if not supabase:
         return []
 
-    projects = fetch_user_projects(supabase, user_email)
+    projects = fetch_user_projects(supabase, user_email, start_date=start_date, end_date=end_date)
     breakdown: List[Dict[str, Any]] = []
 
     for project in projects:
@@ -307,7 +307,7 @@ def get_team_risk_trend(team_id: int, days: int = 30, start_date: str = None, en
     if not supabase:
         return {"trend": [], "team_id": team_id}
 
-    members = fetch_team_members(supabase, team_id)
+    members = fetch_team_members(supabase, team_id, start_date=start_date, end_date=end_date)
     emails = [
         m["user_email"]
         for m in members
@@ -332,7 +332,7 @@ def get_project_risk_trend(project_id: int, days: int = 30, start_date: str = No
     if not supabase:
         return {"trend": [], "project_id": project_id}
 
-    members = fetch_project_members(supabase, project_id)
+    members = fetch_project_members(supabase, project_id, start_date=start_date, end_date=end_date)
     emails = [
         m["user_email"]
         for m in members
