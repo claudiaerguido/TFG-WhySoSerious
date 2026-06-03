@@ -9,9 +9,9 @@ def analyze_message(text):
         return None
         
     try:
-        # Usamos la predicción final (multilabel)
-        result = nlp_model.final_predict(text)
-        return result
+        if nlp_model._model is None:
+            return nlp_model.baseline_predict(text)
+        return nlp_model.final_predict(text)
     except Exception as e:
         print(f"Error analizando '{text[:20]}...': {e}")
         return None

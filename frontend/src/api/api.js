@@ -5,7 +5,7 @@ const getDateQuery = (days, start, end) => start && end ? `start_date=${start}&e
 
 // ── Admin Actions ──────────────────────────────────────────────
 export async function triggerAnalysis() {
-    const res = await fetch(`${BASE_URL}/admin/trigger-analysis`, { method: "POST" });
+    const res = await fetch(`${BASE_URL}/api/admin/trigger-analysis`, { method: "POST", credentials: "include" });
     if (!res.ok) throw new Error("Error al lanzar análisis");
     return res.json();
 }
@@ -18,7 +18,7 @@ export async function fetchAdminSettings() {
 
 export async function updateAdminSettings(settings) {
     const res = await fetch(`${BASE_URL}/api/admin/settings`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
         credentials: "include"
@@ -42,14 +42,6 @@ export async function fetchMe() {
 }
 
 // ── Teams & Projects Endpoints ─────────────────────────────────
-export async function fetchMyWorkspaces() {
-    /** Deprecated: usar fetchMyTeamsAndProjects */
-    const res = await fetch(`${BASE_URL}/api/my/workspaces`, { credentials: "include" });
-    if (res.status === 401) return { workspaces: [], role: null };
-    if (!res.ok) throw new Error("Error al obtener workspaces");
-    return res.json();
-}
-
 export async function fetchMyTeamsAndProjects() {
     const res = await fetch(`${BASE_URL}/api/my/workspaces`, { credentials: "include" });
     if (res.status === 401) return { teams: [], projects: [], role: null };
@@ -59,7 +51,7 @@ export async function fetchMyTeamsAndProjects() {
 
 export async function fetchProjectRisk(projectId, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/project/risk?project_id=${projectId}&${getDateQuery(days, start, end)}`,
+        `${BASE_URL}/api/projects/risk?project_id=${projectId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -69,7 +61,7 @@ export async function fetchProjectRisk(projectId, days = 7, start = null, end = 
 
 export async function fetchProjectTrend(projectId, days = 30, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/project/trend?project_id=${projectId}&${getDateQuery(days, start, end)}`,
+        `${BASE_URL}/api/projects/trend?project_id=${projectId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -79,7 +71,7 @@ export async function fetchProjectTrend(projectId, days = 30, start = null, end 
 
 export async function fetchTeamRisk(teamId, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/team/risk?team_id=${teamId}&${getDateQuery(days, start, end)}`,
+        `${BASE_URL}/api/teams/risk?team_id=${teamId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -89,7 +81,7 @@ export async function fetchTeamRisk(teamId, days = 7, start = null, end = null) 
 
 export async function fetchTeamTrend(teamId, days = 30, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/team/trend?team_id=${teamId}&${getDateQuery(days, start, end)}`,
+        `${BASE_URL}/api/teams/trend?team_id=${teamId}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -99,7 +91,7 @@ export async function fetchTeamTrend(teamId, days = 30, start = null, end = null
 
 export async function fetchTeamMemberBreakdown(userEmail, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/team/member-breakdown?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
+        `${BASE_URL}/api/teams/member-breakdown?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (!res.ok) throw new Error("Error al obtener desglose del miembro");
@@ -114,7 +106,7 @@ export async function fetchProjectsCatalog() {
 }
 
 export async function addProjectMember(userEmail, projectId) {
-    const res = await fetch(`${BASE_URL}/api/project/members`, {
+    const res = await fetch(`${BASE_URL}/api/projects/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_email: userEmail, project_id: projectId }),
@@ -126,7 +118,7 @@ export async function addProjectMember(userEmail, projectId) {
 
 export async function removeProjectMember(userEmail, projectId) {
     const res = await fetch(
-        `${BASE_URL}/api/project/members?user_email=${encodeURIComponent(userEmail)}&project_id=${projectId}`,
+        `${BASE_URL}/api/projects/members?user_email=${encodeURIComponent(userEmail)}&project_id=${projectId}`,
         { method: "DELETE", credentials: "include" }
     );
     if (!res.ok) throw new Error("Error al eliminar miembro del proyecto");
@@ -136,7 +128,7 @@ export async function removeProjectMember(userEmail, projectId) {
 // ── Empleados (US-36) ──────────────────────────────────────────
 export async function fetchEmployeeProfile(userEmail, days = 7, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/employee/profile?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
+        `${BASE_URL}/api/employees/profile?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
@@ -146,50 +138,10 @@ export async function fetchEmployeeProfile(userEmail, days = 7, start = null, en
 
 export async function fetchEmployeeTrend(userEmail, days = 30, start = null, end = null) {
     const res = await fetch(
-        `${BASE_URL}/api/employee/trend?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
+        `${BASE_URL}/api/employees/trend?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,
         { credentials: "include" }
     );
     if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
     if (!res.ok) throw new Error("Error al obtener tendencia del empleado");
     return res.json();
-}
-
-export async function fetchWorkspaceRisk(workspaceId, days = 7) {
-    const res = await fetch(
-        `${BASE_URL}/api/workspace/risk?workspace_id=${workspaceId}&days=${days}`,
-        { credentials: "include" }
-    );
-    if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
-    if (!res.ok) throw new Error("Error al obtener riesgo del workspace");
-    return res.json();
-}
-
-export async function fetchWorkspaceTrend(workspaceId, days = 30) {
-    const res = await fetch(
-        `${BASE_URL}/api/workspace/trend?workspace_id=${workspaceId}&days=${days}`,
-        { credentials: "include" }
-    );
-    if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
-    if (!res.ok) throw new Error("Error al obtener tendencia del workspace");
-    return res.json();
-}
-
-export async function fetchWorkspaceMembers(workspaceId) {
-    const res = await fetch(
-        `${BASE_URL}/api/workspace/members?workspace_id=${workspaceId}`,
-        { credentials: "include" }
-    );
-    if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
-    if (!res.ok) throw new Error("Error al obtener miembros del workspace");
-    return res.json(); // { members: [{alias, included}], workspace_id }
-}
-
-export async function fetchWorkspaceMemberRisks(workspaceId, days = 7) {
-    const res = await fetch(
-        `${BASE_URL}/api/workspace/member-risks?workspace_id=${workspaceId}&days=${days}`,
-        { credentials: "include" }
-    );
-    if (res.status === 403) throw Object.assign(new Error("Forbidden"), { status: 403 });
-    if (!res.ok) throw new Error("Error al obtener riesgo por miembro");
-    return res.json(); // { members: [{alias, risk_score_percentage, risk_level, message_count}] }
 }

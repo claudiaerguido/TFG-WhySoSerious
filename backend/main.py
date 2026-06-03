@@ -1,4 +1,7 @@
 import os
+import secrets
+import logging
+from contextlib import asynccontextmanager
 from typing import Literal
 from dotenv import load_dotenv
 
@@ -15,10 +18,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # Local Modules - Core Logic
 import nlp_model
 from scheduler_tasks import run_nightly_analysis
-from auth_graph_web import (
-    build_auth_url, 
-    exchange_code_for_token, 
-    list_my_chats, 
+from auth.auth_graph_web import (
+    build_auth_url,
+    exchange_code_for_token,
+    list_my_chats,
     get_me_profile
 )
 
@@ -30,7 +33,10 @@ from services.risk_service import (
     get_employee_full_profile, get_employee_risk_trend
 )
 from db_client import get_supabase_client
-from db_repository import fetch_org_settings, save_org_settings
+from db_repository import (
+    fetch_org_settings, save_org_settings,
+    fetch_all_projects_catalog, add_user_to_project, remove_user_from_project
+)
 from utils.date_ranges import get_fiscal_year_range
 
 # ==========================================
@@ -40,31 +46,28 @@ from utils.date_ranges import get_fiscal_year_range
 # Cargamos variables de entorno desde .env si existe
 load_dotenv()
 
-app = FastAPI(title="WhySoSerious Backend API", version="1.1.0")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 # --- SCHEDULER NOCTURNO ---
 scheduler = BackgroundScheduler()
 
 
 def _ensure_scheduler_started() -> None:
-    """Inicia el scheduler una sola vez cuando la app arranca realmente."""
     if not scheduler.get_jobs():
         scheduler.add_job(run_nightly_analysis, trigger="cron", hour=2, minute=0)
     if not scheduler.running:
         scheduler.start()
 
 
-@app.on_event("startup")
-async def _startup_scheduler():
-    """Evita efectos laterales al importar `main` durante los tests."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     _ensure_scheduler_started()
-
-
-@app.on_event("shutdown")
-async def _shutdown_scheduler():
-    """Libera el scheduler al detener la app."""
+    yield
     if scheduler.running:
         scheduler.shutdown(wait=False)
+
+
+app = FastAPI(title="WhySoSerious Backend API", version="1.1.0", lifespan=lifespan)
 
 # --- SEGURIDAD (CORS) ---
 # Permitimos que el frontend (dev y prod local) acceda a la API con credenciales.
@@ -84,7 +87,14 @@ app.add_middleware(
 # --- SEGURIDAD (SESIÓN) ---
 # Se utiliza una variable de entorno para la clave secreta de la sesión.
 # Fallback a "secret-key-muy-segura" solo si no está definida en .env.
-session_secret = os.getenv("SESSION_SECRET_KEY", "secret-key-muy-segura")
+session_secret = os.getenv("SESSION_SECRET_KEY")
+if not session_secret:
+    session_secret = secrets.token_hex(32)
+    logging.warning(
+        "SESSION_SECRET_KEY no definida en .env — "
+        "se ha generado una clave temporal aleatoria. "
+        "Las sesiones no sobrevivirán reinicios del servidor."
+    )
 app.add_middleware(SessionMiddleware, secret_key=session_secret)
 
 
@@ -144,7 +154,7 @@ def _check_team_access(email: str, role: str, team_id: int) -> bool:
     if role in ["admin", "manager"]: 
         return True
     
-    supabase = get_supabase_client() # Corregido: ya no usa db_supabase antiguo
+    supabase = get_supabase_client()
     if not supabase: 
         return False
         
@@ -221,10 +231,10 @@ async def auth_callback(request: Request, code: str = None, state: str = None, e
         except Exception as ep:
             print(f"⚠️ Error obteniendo perfil: {ep}")
 
-        return RedirectResponse("http://localhost:5173/")
+        return RedirectResponse(f"{FRONTEND_URL}/")
     except Exception as e:
         print(f"❌ Error en callback: {e}")
-        return RedirectResponse(f"http://localhost:5173/?auth_failed=1")
+        return RedirectResponse(f"{FRONTEND_URL}/?auth_failed=1")
 
 @app.get("/api/me")
 async def me(request: Request):
@@ -272,7 +282,7 @@ async def me_info_full(request: Request):
 async def logout(request: Request):
     """Limpia la sesión y redirige al frontend."""
     request.session.clear()
-    return RedirectResponse("http://localhost:5173/login")
+    return RedirectResponse(f"{FRONTEND_URL}/login")
 
 
 # ==========================================
@@ -303,7 +313,7 @@ async def get_teams_list(request: Request):
     data = get_teams_and_projects_for_user(email, role)
     return JSONResponse({"teams": data["teams"]})
 
-@app.get("/api/project/risk")
+@app.get("/api/projects/risk")
 async def project_risk(request: Request, project_id: int, days: int = 7, start_date: str = None, end_date: str = None):
     """Calcula el riesgo acumulado de un proyecto específico."""
     email, role = _require_session(request)
@@ -314,7 +324,7 @@ async def project_risk(request: Request, project_id: int, days: int = 7, start_d
         
     return JSONResponse(get_project_tactical_risk(project_id, days, start_date, end_date))
 
-@app.get("/api/project/trend")
+@app.get("/api/projects/trend")
 async def project_trend(request: Request, project_id: int, days: int = 30, start_date: str = None, end_date: str = None):
     """Histórico de tendencia de riesgo para un proyecto."""
     email, role = _require_session(request)
@@ -325,7 +335,7 @@ async def project_trend(request: Request, project_id: int, days: int = 30, start
         
     return JSONResponse(get_project_risk_trend(project_id, days, start_date, end_date))
 
-@app.get("/api/team/risk")
+@app.get("/api/teams/risk")
 async def team_risk(request: Request, team_id: int, days: int = 7, start_date: str = None, end_date: str = None):
     """Riesgo global agregado de un equipo completo."""
     email, role = _require_session(request)
@@ -336,7 +346,7 @@ async def team_risk(request: Request, team_id: int, days: int = 7, start_date: s
         
     return JSONResponse(get_team_global_risk(team_id, days, start_date, end_date))
 
-@app.get("/api/team/trend")
+@app.get("/api/teams/trend")
 async def team_trend(request: Request, team_id: int, days: int = 30, start_date: str = None, end_date: str = None):
     """Tendencia temporal de riesgo para un equipo."""
     email, role = _require_session(request)
@@ -347,7 +357,7 @@ async def team_trend(request: Request, team_id: int, days: int = 30, start_date:
         
     return JSONResponse(get_team_risk_trend(team_id, days, start_date, end_date))
 
-@app.get("/api/team/member-breakdown")
+@app.get("/api/teams/member-breakdown")
 async def team_member_breakdown(request: Request, user_email: str, days: int = 7, start_date: str = None, end_date: str = None):
     """
     Desglose de riesgo por proyectos de un usuario.
@@ -363,7 +373,7 @@ async def team_member_breakdown(request: Request, user_email: str, days: int = 7
     return JSONResponse(get_member_projects_breakdown(user_email, days, start_date, end_date))
 
 
-@app.get("/api/employee/profile")
+@app.get("/api/employees/profile")
 async def employee_profile(request: Request, user_email: str, days: int = 7, start_date: str = None, end_date: str = None):
     """Perfil detallado de riesgo de un empleado."""
     email, role = _require_session(request)
@@ -375,7 +385,7 @@ async def employee_profile(request: Request, user_email: str, days: int = 7, sta
         
     return JSONResponse(get_employee_full_profile(user_email, days, start_date, end_date))
 
-@app.get("/api/employee/trend")
+@app.get("/api/employees/trend")
 async def employee_trend(request: Request, user_email: str, days: int = 30, start_date: str = None, end_date: str = None):
     """Tendencia temporal de riesgo de un empleado."""
     email, role = _require_session(request)
@@ -391,7 +401,7 @@ async def employee_trend(request: Request, user_email: str, days: int = 30, star
 # 5. ADMINISTRACIÓN & CONFIGURACIÓN TFG
 # ==========================================
 
-@app.post("/admin/trigger-analysis")
+@app.post("/api/admin/trigger-analysis")
 async def trigger_analysis(request: Request):
     """Fuerza la ejecución inmediata del pipeline de análisis."""
     email, role = _require_session(request)
@@ -436,7 +446,7 @@ async def get_settings(request: Request):
         "prev_fy_end_date": prev_end
     })
 
-@app.post("/api/admin/settings")
+@app.put("/api/admin/settings")
 async def update_settings(request: Request, body: SettingsRequest):
     """Actualiza la configuración global (Solo Admin)."""
     email, role = _require_session(request)
@@ -465,10 +475,9 @@ async def projects_catalog(request: Request):
     if role not in ["admin", "manager"]:
         return JSONResponse({"error": "Acceso denegado"}, status_code=403)
         
-    from db_repository import fetch_all_projects_catalog
     return JSONResponse(fetch_all_projects_catalog(get_supabase_client()))
 
-@app.post("/api/project/members")
+@app.post("/api/projects/members")
 async def add_project_member(request: Request, body: MemberProjectRequest):
     """Asocia un usuario a un proyecto."""
     email, role = _require_session(request)
@@ -477,11 +486,10 @@ async def add_project_member(request: Request, body: MemberProjectRequest):
     if not _can_manage_user(email, role, body.user_email):
         return JSONResponse({"error": "No tienes permiso para gestionar a este usuario"}, status_code=403)
         
-    from db_repository import add_user_to_project
     success = add_user_to_project(get_supabase_client(), body.user_email, body.project_id)
     return {"status": "success" if success else "error"}
 
-@app.delete("/api/project/members")
+@app.delete("/api/projects/members")
 async def remove_project_member(request: Request, user_email: str, project_id: int):
     """Desasocia un usuario de un proyecto."""
     email, role = _require_session(request)
@@ -490,7 +498,6 @@ async def remove_project_member(request: Request, user_email: str, project_id: i
     if not _can_manage_user(email, role, user_email):
         return JSONResponse({"error": "No tienes permiso para gestionar a este usuario"}, status_code=403)
         
-    from db_repository import remove_user_from_project
     success = remove_user_from_project(get_supabase_client(), user_email, project_id)
     return {"status": "success" if success else "error"}
 

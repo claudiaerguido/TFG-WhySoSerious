@@ -1,31 +1,27 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Typography, Card, CardContent, Button, Chip,
   Alert, Skeleton, ToggleButtonGroup, ToggleButton,
   LinearProgress, Accordion, AccordionSummary, AccordionDetails,
-  Divider, Paper, TextField
+  Divider, Paper, TextField, IconButton, MenuItem, Select, FormControl
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import LockIcon from "@mui/icons-material/Lock";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { useLocation } from "react-router-dom";
 import {
   fetchTeamRisk, fetchTeamTrend,
   fetchProjectRisk, fetchProjectTrend,
   fetchTeamMemberBreakdown,
-  triggerAnalysis, fetchMyTeamsAndProjects,
+  triggerAnalysis,
   fetchProjectsCatalog, addProjectMember, removeProjectMember
-} from "../../api/backend";
-import { useMe } from "../../context/AuthContext";
+} from "../../api/api";
+import { useMe } from "../../context/authState";
 import RiskCard from "../../components/RiskCard";
-import IconButton from "@mui/material/IconButton";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import { MenuItem, Select, FormControl } from "@mui/material";
 import RiskTrendChart from "../../components/RiskTrendChart";
 import { useRiskFilters } from "../../hooks/useRiskFilters";
 import "./ProjectDetailPage.css";
@@ -41,7 +37,7 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
   const { user } = useMe();
   const queryClient = useQueryClient();
 
-  const memberEmail = member.email || member.user_email;
+  const memberEmail = member.user_email;
   const canManage = user?.role === "admin" || (user?.role === "manager" && type === "team");
 
   const queryStart = rangeMode === "custom" ? customRange.start : null;
@@ -108,7 +104,7 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
               sx={{ cursor: "pointer", "&:hover": { color: "#4f46e5" } }}
               onClick={() => navigate(`/employee/${memberEmail}`)}
             >
-              {member.display_name || member.alias}
+              {member.display_name}
             </Typography>
 
             {member.role !== "employee" && (
@@ -185,61 +181,37 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
               </Typography>
             </Paper>
           ) : (
-            <Box className="member-table">
-              {/* Cabecera mini tabla */}
-              <Box className="member-table-header">
-                <Typography variant="caption" className="member-table-header-cell">
-                  Proyecto
-                </Typography>
-                <Typography variant="caption" className="member-table-header-cell" align="right">
-                  Riesgo
-                </Typography>
-                <Typography variant="caption" className="member-table-header-cell" align="center">
-                  Acción
-                </Typography>
-              </Box>
-
-              {/* Filas */}
-              {displayBreakdown.map((p, idx) => {
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+              {displayBreakdown.map((p) => {
                 const projectRisk = p.project_risk;
-                const projectColor =
-                  projectRisk === null || projectRisk === undefined
-                    ? "#94a3b8"
-                    : projectRisk >= 35
-                      ? "#ef4444"
-                      : projectRisk >= 20
-                        ? "#f59e0b"
-                        : "#22c55e";
+                const projectColor = projectRisk === null || projectRisk === undefined
+                  ? "#94a3b8"
+                  : projectRisk >= 35 ? "#ef4444"
+                  : projectRisk >= 20 ? "#f59e0b"
+                  : "#22c55e";
+                const projectBg = projectRisk === null || projectRisk === undefined
+                  ? "rgba(148,163,184,0.08)"
+                  : projectRisk >= 35 ? "rgba(239,68,68,0.07)"
+                  : projectRisk >= 20 ? "rgba(245,158,11,0.07)"
+                  : "rgba(34,197,94,0.07)";
 
                 return (
-                  <Box
+                  <Chip
                     key={p.project_id}
-                    className="member-table-row"
-                  >
-                    <Typography variant="body2" className="member-project-name">
-                      {p.project_name}
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      className="member-project-risk"
-                      sx={{ color: projectColor }}
-                    >
-                      {projectRisk === null || projectRisk === undefined ? "—" : `${projectRisk}%`}
-                    </Typography>
-
-                    <Box className="member-project-action">
-                      {canManage && (
-                        <IconButton
-                          size="small"
-                          onClick={() => removeMutation.mutate(p.project_id)}
-                          sx={{ color: "#ef4444" }}
-                        >
-                          <DeleteIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      )}
-                    </Box>
-                  </Box>
+                    label={`${p.project_name}${projectRisk !== null && projectRisk !== undefined ? ` · ${projectRisk}%` : ''}`}
+                    onDelete={canManage ? () => removeMutation.mutate(p.project_id) : undefined}
+                    size="small"
+                    sx={{
+                      bgcolor: projectBg,
+                      color: '#334155',
+                      border: `1px solid ${projectColor}30`,
+                      fontWeight: 500,
+                      '& .MuiChip-deleteIcon': {
+                        color: '#94a3b8',
+                        '&:hover': { color: '#ef4444' }
+                      }
+                    }}
+                  />
                 );
               })}
             </Box>
@@ -296,6 +268,12 @@ export default function ProjectDetailPage() {
     queryStart, queryEnd, handleFilterChange
   } = useRiskFilters(7);
 
+  const queryClient = useQueryClient();
+  const cachedWorkspaces = queryClient.getQueryData(["myTeamsAndProjects"]);
+  const workspaceName = type === "team"
+    ? cachedWorkspaces?.teams?.find(t => t.id === itemId)?.name
+    : cachedWorkspaces?.projects?.find(p => p.id === itemId)?.name;
+
   const riskQuery = useQuery({
     queryKey: [type === "team" ? "teamRisk" : "projectRisk", itemId, days, rangeMode, queryStart, queryEnd],
     queryFn: () => type === "team" ? fetchTeamRisk(itemId, days, queryStart, queryEnd) : fetchProjectRisk(itemId, days, queryStart, queryEnd),
@@ -340,7 +318,7 @@ export default function ProjectDetailPage() {
   if (trendData.length > 1) {
     const first = trendData[0].risk_score_percentage;
     const last = trendData[trendData.length - 1].risk_score_percentage;
-    const diff = (last - first).toFixed(1);
+    const diff = +(last - first).toFixed(1);
     variationText = diff > 0 ? `+${diff}%` : `${diff}%`;
   }
 
@@ -354,7 +332,7 @@ export default function ProjectDetailPage() {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={400} sx={{ mb: 1, color: "text.primary" }}>
-          {type === 'team' ? 'Equipo' : 'Proyecto'} #{itemId}
+          {workspaceName ?? `${type === 'team' ? 'Equipo' : 'Proyecto'} #${itemId}`}
           <Typography component="span" variant="h5" color="text.secondary" fontWeight={300}>
             {type === 'team' ? " — Riesgo Global" : " — Riesgo Táctico"}
           </Typography>
@@ -497,7 +475,7 @@ export default function ProjectDetailPage() {
             <Box className="member-list-container">
               {/* Sección de Managers (si es equipo) */}
               {type === "team" && (riskData?.members ?? []).filter(m => m.role !== 'employee').map(m => (
-                <Box key={m.email} sx={{ mb: 1 }}>
+                <Box key={m.user_email} sx={{ mb: 1 }}>
                   <Typography variant="caption" color="text.disabled" sx={{ ml: 1, mb: 0.5, display: "block", fontWeight: 700 }}>RESPONSABLE / GESTIÓN</Typography>
                   <MemberRiskRow member={m} type={type} days={days} rangeMode={rangeMode} customRange={customRange} />
                 </Box>
@@ -505,7 +483,7 @@ export default function ProjectDetailPage() {
 
               {/* Sección de Empleados */}
               {(riskData?.members ?? []).filter(m => m.role === 'employee').map((m) => (
-                <MemberRiskRow key={m.email} member={m} type={type} days={days} rangeMode={rangeMode} customRange={customRange} />
+                <MemberRiskRow key={m.user_email} member={m} type={type} days={days} rangeMode={rangeMode} customRange={customRange} />
               ))}
             </Box>
           )}
@@ -527,7 +505,7 @@ export default function ProjectDetailPage() {
                 ? "El riesgo global del equipo se calcula como la media de los niveles de estrés detectados en las comunicaciones de sus miembros operativos (employees). Los perfiles de gestión (managers/admins) se muestran para visibilidad pero no afectan al promedio del equipo para evitar sesgos."
                 : "El riesgo táctico del proyecto evalúa específicamente cómo los mensajes intercambiados dentro de este proyecto afectan al bienestar de los participantes, permitiendo identificar fricciones en entregas o flujos de trabajo específicos."}
               <br /><br />
-              Nuestro modelo procesa los mensajes codificados usando transformadores lingüísticos (base RoBERTa), clasificando el texto en dimensiones emocionales. Todo el proceso es "Privacy by Design" y anonimizado en origen.
+              Nuestro modelo procesa los mensajes codificados usando transformadores lingüísticos (BERT multilingüe fine-tuneado), clasificando el texto en dimensiones emocionales. Todo el proceso es "Privacy by Design" y anonimizado en origen.
             </Typography>
           </AccordionDetails>
         </Accordion>
@@ -536,4 +514,3 @@ export default function ProjectDetailPage() {
     </Box>
   );
 }
-

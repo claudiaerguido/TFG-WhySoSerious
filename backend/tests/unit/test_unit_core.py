@@ -88,13 +88,14 @@ def test_get_teams_and_projects_for_user_manager_returns_only_managed(mock_clien
     """
     mock_supabase = MagicMock()
     mock_client.return_value = mock_supabase
-    mock_supabase.table().select().eq().execute.return_value.data = [{"id": 2, "name": "Local Team"}]
-    
+    mock_supabase.table().select().eq().execute.return_value.data = [
+        {"team_id": 2, "teams": {"name": "Local Team"}}
+    ]
+
     res = get_teams_and_projects_for_user("manager@tfg.com", "manager")
-    
+
     assert len(res["teams"]) == 1
     assert res["teams"][0]["name"] == "Local Team"
-    # Verificamos que se haya filtrado tanto en equipos como en proyectos
     mock_supabase.table().select().eq.assert_any_call("manager_email", "manager@tfg.com")
     mock_supabase.table().select().eq.assert_any_call("owner_email", "manager@tfg.com")
 

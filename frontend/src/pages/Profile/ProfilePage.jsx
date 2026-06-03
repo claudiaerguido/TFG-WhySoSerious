@@ -1,12 +1,13 @@
-import { Box, Typography, Avatar, Chip, Divider, Card, CardContent, Grid, TextField, Select, MenuItem, Button, LinearProgress } from "@mui/material";
+import { useState } from "react";
+import { Box, Typography, Avatar, Chip, Divider, Card, CardContent, Grid, Select, MenuItem, Button, LinearProgress, Snackbar, Alert } from "@mui/material";
 import BadgeIcon from "@mui/icons-material/Badge";
 import EmailIcon from "@mui/icons-material/Email";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useMe } from "../../context/AuthContext";
+import { useMe } from "../../context/authState";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminSettings, updateAdminSettings } from "../../api/backend";
+import { fetchAdminSettings, updateAdminSettings } from "../../api/api";
 import "./ProfilePage.css";
 
 const ROLE_CONFIG = {
@@ -23,12 +24,14 @@ const ROLE_CONFIG = {
     employee: {
         label: "Colaborador",
         color: "#6366f1",
-        description: "Acceso a los workspaces donde eres responsable.",
+        description: "Acceso a tu perfil personal y a tus métricas de riesgo individual.",
     },
 };
 
 const AdminSettingsSection = () => {
     const queryClient = useQueryClient();
+    const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
     const { data: settings, isLoading } = useQuery({
         queryKey: ["adminSettings"],
         queryFn: fetchAdminSettings,
@@ -38,14 +41,16 @@ const AdminSettingsSection = () => {
         mutationFn: updateAdminSettings,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["adminSettings"] });
-            alert("Configuración actualizada correctamente.");
+            setSnackbar({ open: true, message: "Configuración actualizada correctamente.", severity: "success" });
         },
         onError: (err) => {
-            alert("Error al actualizar la configuración: " + err.message);
+            setSnackbar({ open: true, message: "Error al actualizar: " + err.message, severity: "error" });
         }
     });
 
     if (isLoading) return <LinearProgress sx={{ mt: 2, borderRadius: 2 }} />;
+
+    const handleClose = () => setSnackbar(s => ({ ...s, open: false }));
 
     const handleSave = (e) => {
         e.preventDefault();
@@ -121,6 +126,12 @@ const AdminSettingsSection = () => {
                     </form>
                 </CardContent>
             </Card>
+
+            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleClose} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
+                <Alert onClose={handleClose} severity={snackbar.severity} sx={{ width: "100%" }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

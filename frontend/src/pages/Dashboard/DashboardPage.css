@@ -13,8 +13,8 @@
 /* KpiCard Component - Redesigned */
 .kpi-card {
     background-color: #fff !important;
-    border: 1px solid rgba(0, 0, 0, 0.05) !important;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02) !important;
+    border: 1px solid rgba(0, 0, 0, 0.07) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
 }
 
 .kpi-card-content {
@@ -44,8 +44,8 @@
 }
 
 .kpi-badge-up {
-    background-color: #ecfdf5;
-    color: #10b981;
+    background-color: #f0fdf4;
+    color: #22c55e;
 }
 
 .kpi-badge-down {

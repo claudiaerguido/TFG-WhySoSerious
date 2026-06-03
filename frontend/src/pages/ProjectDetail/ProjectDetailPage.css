@@ -145,20 +145,6 @@
     border-bottom: 1px solid #f1f5f9;
 }
 
-.member-project-name {
-    color: #0f172a !important;
-    font-weight: 500 !important;
-}
-
-.member-project-risk {
-    text-align: right;
-    font-weight: 700 !important;
-}
-
-.member-project-action {
-    display: flex;
-    justify-content: center;
-}
 
 .member-no-data-paper {
     padding: 16px;

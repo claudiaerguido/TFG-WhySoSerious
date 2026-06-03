@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
     Box, Drawer, AppBar, Toolbar, Typography, List, ListItemButton,
-    ListItemIcon, ListItemText, IconButton, Avatar, Divider, Chip, Tooltip, Card, CardContent
+    ListItemIcon, ListItemText, IconButton, Avatar, Divider, Chip, Tooltip
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupsIcon from "@mui/icons-material/Groups";
@@ -10,8 +11,8 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import LogoutIcon from "@mui/icons-material/LogoutOutlined";
 import MenuIcon from "@mui/icons-material/Menu";
-import { logoutUrl } from "../api/backend";
-import { useMe } from "../context/AuthContext";
+import { logoutUrl } from "../api/api";
+import { useMe } from "../context/authState";
 
 const DRAWER_WIDTH = 260;
 
@@ -22,11 +23,36 @@ const NAV_ITEMS = [
     { label: "Mi Perfil", icon: <AccountCircleIcon />, path: "/profile" },
 ];
 
+function usePageTitle() {
+    const location = useLocation();
+    const queryClient = useQueryClient();
+    const navMatch = NAV_ITEMS.find(n => n.path === location.pathname);
+    if (navMatch) return navMatch.label;
+
+    const cachedWorkspaces = queryClient.getQueryData(["myTeamsAndProjects"]);
+    const teamMatch = location.pathname.match(/^\/team\/(\d+)/);
+    const projectMatch = location.pathname.match(/^\/project\/(\d+)/);
+    const employeeMatch = location.pathname.match(/^\/employee\/(.+)/);
+
+    if (teamMatch) {
+        const name = cachedWorkspaces?.teams?.find(t => t.id === Number(teamMatch[1]))?.name;
+        return name ?? "Detalle de Equipo";
+    }
+    if (projectMatch) {
+        const name = cachedWorkspaces?.projects?.find(p => p.id === Number(projectMatch[1]))?.name;
+        return name ?? "Detalle de Proyecto";
+    }
+    if (employeeMatch) return decodeURIComponent(employeeMatch[1]);
+
+    return "Panel de analítica";
+}
+
 export default function AppShell() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useMe();
+    const pageTitle = usePageTitle();
 
     const drawerContent = (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "#fff" }}>
@@ -173,7 +199,7 @@ export default function AppShell() {
                                 <MenuIcon />
                             </IconButton>
                             <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: -0.5 }}>
-                                {NAV_ITEMS.find((n) => n.path === location.pathname)?.label ?? "Panel de analítica"}
+                                {pageTitle}
                             </Typography>
                         </Box>
 
@@ -196,7 +222,9 @@ export default function AppShell() {
                                     onClick={() => navigate('/profile')}
                                     sx={{ bgcolor: "primary.main", width: 38, height: 38, fontSize: 14, fontWeight: 700, boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)', cursor: 'pointer', '&:hover': { opacity: 0.85 } }}
                                 >
-                                    {user?.display_name ? user.display_name.substring(0, 2).toUpperCase() : "U"}
+                                    {user?.display_name
+                        ? user.display_name.split(" ").map(p => p[0]).join("").substring(0, 2).toUpperCase()
+                        : "U"}
                                 </Avatar>
                             </Tooltip>
                             <Tooltip title="Cerrar sesión">

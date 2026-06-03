@@ -11,7 +11,7 @@ import {
     ReferenceArea,
     Brush
 } from "recharts";
-import { Typography, Paper, Box, Alert, Stack } from "@mui/material";
+import { Typography, Paper, Box } from "@mui/material";
 
 const getStatus = (value) => {
     if (value >= 35) return { label: "Riesgo Alto", color: "#ef4444", bg: "rgba(239, 68, 68, 0.05)" };
@@ -77,8 +77,9 @@ function buildContinuousSeries(data, startDate, endDate, days) {
         startObj = new Date(sy, sm - 1, sd);
         endObj = new Date(ey, em - 1, ed);
     } else {
-        const today = new Date();
-        endObj = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const todayStr = getTodayStr();
+        const [ty, tm, td] = todayStr.split('-');
+        endObj = new Date(ty, tm - 1, td);
         startObj = new Date(endObj);
         startObj.setDate(startObj.getDate() - days + 1);
     }
@@ -122,6 +123,11 @@ function buildContinuousSeries(data, startDate, endDate, days) {
     return result;
 }
 
+function getTodayStr() {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
 function formatDateLabel(dateStr) {
     if (!dateStr) return "";
     const [, month, day] = dateStr.split("-");
@@ -146,8 +152,7 @@ function renderDot(props) {
 }
 
 const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null, height = 280 }) => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const todayStr = getTodayStr();
 
     const processedData = useMemo(
         () => buildContinuousSeries(data, startDate, endDate, days),
@@ -158,39 +163,15 @@ const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null,
 
     return (
         <Box sx={{ width: "100%" }}>
-            <Stack direction="row" spacing={3} sx={{ mb: 2, px: 1 }}>
-                <Box>
-                    <Typography variant="caption" fontWeight={800} color="#22c55e" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e' }} />
-                        BAJO: 0-20%
-                    </Typography>
-                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: 9 }}>Ausencia de señales relevantes</Typography>
-                </Box>
-                <Box>
-                    <Typography variant="caption" fontWeight={800} color="#f59e0b" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                        MODERADO: 20-35%
-                    </Typography>
-                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: 9 }}>Patrones que requieren seguimiento</Typography>
-                </Box>
-                <Box>
-                    <Typography variant="caption" fontWeight={800} color="#ef4444" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444' }} />
-                        ALTO: &gt;35%
-                    </Typography>
-                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: 9 }}>Necesidad de revisión prioritaria</Typography>
-                </Box>
-            </Stack>
-
             <Box sx={{ width: "100%", height }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                         data={processedData}
                         margin={{ top: 20, right: 60, left: 10, bottom: 0 }}
                     >
-                        <ReferenceArea y1={0} y2={20} fill="#22c55e" fillOpacity={0.03} isFront={false} />
-                        <ReferenceArea y1={20} y2={35} fill="#f59e0b" fillOpacity={0.04} isFront={false} />
-                        <ReferenceArea y1={35} y2={100} fill="#ef4444" fillOpacity={0.04} isFront={false} />
+                        <ReferenceArea y1={0} y2={20} fill="#22c55e" fillOpacity={0.07} isFront={false} />
+                        <ReferenceArea y1={20} y2={35} fill="#f59e0b" fillOpacity={0.12} isFront={false} />
+                        <ReferenceArea y1={35} y2={100} fill="#ef4444" fillOpacity={0.10} isFront={false} />
 
                         <CartesianGrid
                             strokeDasharray="3 3"
@@ -237,7 +218,8 @@ const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null,
                                 stroke="rgba(148, 163, 184, 0.4)"
                                 strokeWidth={1}
                                 strokeDasharray="4 4"
-                                label={{ value: 'Hoy', position: 'top', offset: 15, fill: '#94a3b8', fontSize: 10, fontWeight: 500 }}
+                                ifOverflow="visible"
+                                label={{ value: 'Hoy', position: 'top', offset: 5, fill: '#94a3b8', fontSize: 10, fontWeight: 500 }}
                             />
                         )}
 
@@ -248,20 +230,20 @@ const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null,
                             strokeOpacity={0.6}
                             label={{ value: 'MODERADO (20%)', position: 'right', fill: '#d97706', fontSize: 9, fontWeight: 700, offset: 5 }}
                         />
-                        <Brush 
-                            dataKey="date" 
-                            height={25} 
-                            stroke="#6366f1" 
-                            fill="rgba(99, 102, 241, 0.05)" 
-                            travellerWidth={10} 
-                            tickFormatter={formatDateLabel} 
-                        />
                         <ReferenceLine
                             y={35}
                             stroke="#ef4444"
                             strokeDasharray="3 3"
                             strokeOpacity={0.6}
-                            label={{ value: 'ALTO (35%)', position: 'right', fill: '#dc2626', fontSize: 9, fontWeight: 700, offset: 5 }}
+                            label={{ value: 'ALTO', position: 'right', fill: '#dc2626', fontSize: 9, fontWeight: 700, offset: 5 }}
+                        />
+                        <Brush
+                            dataKey="date"
+                            height={25}
+                            stroke="#6366f1"
+                            fill="rgba(99, 102, 241, 0.05)"
+                            travellerWidth={10}
+                            tickFormatter={formatDateLabel}
                         />
                     </LineChart>
                 </ResponsiveContainer>

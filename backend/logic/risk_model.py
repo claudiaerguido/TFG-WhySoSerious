@@ -1,3 +1,5 @@
+import json
+import os
 import pandas as pd
 from typing import Dict, List
 
@@ -9,7 +11,6 @@ TARGET_LABELS = [
     "ENFADO_IRRITACION",
     "SOBRECARGA_URGENCIA",
     "CANSANCIO_FATIGA",
-    "POSITIVO_ALIVIO",
     "NEUTRO",
 ]
 
@@ -19,24 +20,24 @@ DB_COLS = {
     "ENFADO_IRRITACION":  "enfado_irritacion",
     "SOBRECARGA_URGENCIA":"sobrecarga_urgencia",
     "CANSANCIO_FATIGA":   "cansancio_fatiga",
-    "POSITIVO_ALIVIO":    "positivo_alivio",
     "NEUTRO":             "neutro",
 }
 
 # Subconjunto de etiquetas operativas que alimentan el observatorio de riesgo
 NEGATIVE_LABELS = [
     "ESTRES_ANSIEDAD",
+    "ENFADO_IRRITACION",
     "SOBRECARGA_URGENCIA",
     "CANSANCIO_FATIGA",
 ]
 
-# Umbrales para la categorización del riesgo en el Dashboard (%)
+# Umbrales para la categorización del riesgo en el Dashboard (escala 0-100)
 RISK_THRESHOLDS = {"Rojo": 35, "Amarillo": 20}
 
 # ── Metodología de Cálculo de Riesgo ───────────────────────────────────────
 
 def _risk_level(pct: float) -> str:
-    """Categoriza el porcentaje de riesgo según los umbrales de semáforo."""
+    """Categoriza el riesgo según los umbrales de semáforo. Espera valores en escala 0-100."""
     if pct >= RISK_THRESHOLDS["Rojo"]: return "Rojo"
     if pct >= RISK_THRESHOLDS["Amarillo"]: return "Amarillo"
     return "Verde"
@@ -56,11 +57,8 @@ def _normalize_weights(weights: Dict[str, float]) -> Dict[str, float]:
     if denom == 0: return {k: 0.0 for k in weights}
     return {k: v / denom for k, v in weights.items()}
 
-import json
-import os
-
 # Ruta al archivo de umbrales calibrados
-THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "../thresholds_phaseB.json")
+THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "../thresholds.json")
 
 def _load_calibrated_thresholds() -> Dict[str, float]:
     """Carga los umbrales de decisión del archivo de configuración."""

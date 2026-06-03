@@ -1,14 +1,16 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-    Box, Grid, Card, CardContent, Typography, Skeleton, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, IconButton, Alert, Stack
+    Box, Grid, Card, CardContent, Typography, Skeleton, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import { fetchMyTeamsAndProjects, fetchTeamRisk, fetchProjectRisk } from "../../api/backend";
-import { useMe } from "../../context/AuthContext";
+import GroupsIcon from "@mui/icons-material/Groups";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import { fetchMyTeamsAndProjects, fetchTeamRisk, fetchProjectRisk } from "../../api/api";
+import { useMe } from "../../context/authState";
 import "./DashboardPage.css";
 
 const CHIP_COLORS = {
@@ -22,6 +24,29 @@ function chipStyle(level) {
 }
 function pctColor(level) {
     return (CHIP_COLORS[level] ?? { text: 'inherit' }).text;
+}
+
+function WorkspaceIcon({ type }) {
+    const isTeam = type === "team";
+    const Icon = isTeam ? GroupsIcon : AssignmentOutlinedIcon;
+    return (
+        <Box
+            sx={{
+                width: 34,
+                height: 34,
+                borderRadius: 1.5,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: isTeam ? "rgba(79, 70, 229, 0.08)" : "rgba(5, 150, 105, 0.08)",
+                color: isTeam ? "#4f46e5" : "#059669",
+                border: isTeam ? "1px solid rgba(79, 70, 229, 0.14)" : "1px solid rgba(5, 150, 105, 0.14)",
+                flex: "0 0 auto",
+            }}
+        >
+            <Icon sx={{ fontSize: 18 }} />
+        </Box>
+    );
 }
 
 function KpiCard({ title, value, badgeText, badgeType, subText }) {
@@ -126,7 +151,7 @@ export default function DashboardPage() {
                 <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
                     <Box sx={{ width: '100%' }}>
                         <KpiCard
-                            title="Entidades visibles"
+                            title="Equipos y Proyectos"
                             value={isLoadingWs ? "..." : totalItems}
                             badgeText={teams.length.toString()}
                             badgeType="circle"
@@ -139,10 +164,10 @@ export default function DashboardPage() {
                     <Box sx={{ width: '100%' }}>
                         <KpiCard
                             title="Último Análisis"
-                            value="Hoy"
-                            badgeText="Completado"
-                            badgeType="up"
-                            subText="Procesado autom. nocturno"
+                            value="Diario"
+                            badgeText="Automático"
+                            badgeType="neutral"
+                            subText="Ejecución nocturna · 02:00 UTC"
                         />
                     </Box>
                 </Grid>
@@ -150,7 +175,7 @@ export default function DashboardPage() {
                 <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
                     <Box sx={{ width: '100%' }}>
                         <KpiCard
-                            title="Workspaces en Riesgo"
+                            title="Equipos en Alerta"
                             value={!allLoaded ? "..." : (workspacesWithRisk.filter(w => w.level === "Rojo" || w.level === "Amarillo").length).toString()}
                             badgeText="Atención"
                             badgeType={(workspacesWithRisk.filter(w => w.level === "Rojo" || w.level === "Amarillo").length) > 0 ? "down" : "neutral"}
@@ -162,11 +187,11 @@ export default function DashboardPage() {
                 <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
                     <Box sx={{ width: '100%' }}>
                         <KpiCard
-                            title="Riesgo Global Org."
+                            title="Riesgo Global"
                             value={!allLoaded ? "..." : globalRisk !== null ? `${globalRisk}%` : "—"}
                             badgeText={globalLevel || "-"}
                             badgeType={globalLevel === "Rojo" ? "down" : globalLevel === "Amarillo" ? "neutral" : "up"}
-                            subText={"Basado en " + scores.length + " workspaces"}
+                            subText={"Basado en " + scores.length + " entidades"}
                         />
                     </Box>
                 </Grid>
@@ -183,13 +208,13 @@ export default function DashboardPage() {
                     </Box>
 
                     <TableContainer sx={{ border: '1px solid rgba(0,0,0,0.04)', borderRadius: 2 }}>
-                        <Table sx={{ minWidth: 650 }}>
+                        <Table sx={{ minWidth: { xs: 500, sm: 650 } }}>
                             <TableHead sx={{ bgcolor: '#f8fafc' }}>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Nombre completo</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Nombre</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Tipo</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Muestra</TableCell>
-                                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Puntuación Riesgo</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Puntuación de Riesgo</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Nivel</TableCell>
                                     <TableCell align="right" sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Acción</TableCell>
                                 </TableRow>
@@ -198,16 +223,14 @@ export default function DashboardPage() {
                                 {workspacesWithRisk.length === 0 && !isLoadingWs ? (
                                     <TableRow>
                                         <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                                            No tienes workspaces asignados que monitorizar.
+                                            No tienes equipos ni proyectos asignados que monitorizar.
                                         </TableCell>
                                     </TableRow>
                                 ) : workspacesWithRisk.map((ws) => (
                                     <TableRow key={`${ws.type}-${ws.id}`} hover sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', transition: 'background-color 0.2s' }} onClick={() => navigate(`/${ws.type}/${ws.id}`)}>
                                         <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)', py: 2 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                <Avatar sx={{ width: 36, height: 36, bgcolor: ws.type === 'team' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.1)', color: ws.type === 'team' ? 'primary.main' : 'success.main', fontSize: 13, fontWeight: 800 }}>
-                                                    {ws.name.substring(0, 2).toUpperCase()}
-                                                </Avatar>
+                                                <WorkspaceIcon type={ws.type} />
                                                 <Typography variant="body2" fontWeight={700} color="text.primary">
                                                     {ws.name}
                                                 </Typography>

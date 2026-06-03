@@ -9,7 +9,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import {
     fetchEmployeeProfile,
     fetchEmployeeTrend
-} from "../../api/backend";
+} from "../../api/api";
 import RiskCard from "../../components/RiskCard";
 import RiskTrendChart from "../../components/RiskTrendChart";
 import { useRiskFilters } from "../../hooks/useRiskFilters";
@@ -82,7 +82,7 @@ export default function EmployeeProfilePage() {
                             {profile?.display_name}
                         </Typography>
                         <Typography variant="body1" color="text.secondary">
-                            {profile?.role === 'manager' ? 'Manager' : 'Employee'} · {email}
+                            {profile?.role === 'manager' ? 'Manager' : profile?.role === 'admin' ? 'Admin' : 'Employee'} · {email}
                         </Typography>
                     </>
                 )}
@@ -199,7 +199,7 @@ export default function EmployeeProfilePage() {
                                     <Box key={p.project_id} className="member-table-row" sx={{ gridTemplateColumns: "1fr 100px" }}>
                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>{p.project_name}</Typography>
                                         <Typography variant="body2" sx={{ textAlign: "right", fontWeight: 700, color: projectColor }}>
-                                            {p.project_risk}%
+                                            {p.project_risk !== null && p.project_risk !== undefined ? `${p.project_risk}%` : "—"}
                                         </Typography>
                                     </Box>
                                 );

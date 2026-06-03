@@ -240,7 +240,8 @@ def get_member_projects_breakdown(user_email: str, days: int = 7, start_date: st
     if not supabase:
         return []
 
-    projects = fetch_user_projects(supabase, user_email, start_date=start_date, end_date=end_date)
+    # Para la gestión en el frontend, listamos únicamente los proyectos en los que participa actualmente (end_date es null)
+    projects = fetch_user_projects(supabase, user_email, start_date=None, end_date=None)
     breakdown: List[Dict[str, Any]] = []
 
     for project in projects:

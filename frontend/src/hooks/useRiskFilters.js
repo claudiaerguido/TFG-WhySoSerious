@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAdminSettings } from "../api/backend";
+import { fetchAdminSettings } from "../api/api";
 
 /**
- * Custom hook to manage common risk analysis filters across the app.
- * Centralizes logic for preset days, custom ranges, and fiscal year selection.
+ * Hook para gestionar los filtros de análisis de riesgo (días, rango personalizado y año fiscal).
  */
 export function useRiskFilters(initialDays = 7) {
     const [days, setDays] = useState(initialDays);
-    const [rangeMode, setRangeMode] = useState("preset"); // preset | custom | fiscal
+    const [rangeMode, setRangeMode] = useState("preset"); // preset | custom | fiscal | fiscal-prev
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
 
     // Fetch org settings for fiscal year dates

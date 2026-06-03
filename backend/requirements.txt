@@ -4,11 +4,10 @@ pydantic
 transformers
 torch
 datasets
-msal
 requests
 python-dotenv
 beautifulsoup4
 itsdangerous
-psycopg2-binary
 supabase
 apscheduler
+pytest

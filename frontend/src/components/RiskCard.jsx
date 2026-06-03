@@ -4,8 +4,8 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
 const LEVEL_CONFIG = {
     Verde: {
-        color: "#10b981",
-        bg: "rgba(16,185,129,0.06)",
+        color: "#22c55e",
+        bg: "rgba(34,197,94,0.06)",
         label: "Riesgo Bajo",
         description: "Zona de bienestar (0-20%): No se detectan señales relevantes de burnout o tensión. La dinámica de comunicación es estable.",
     },
@@ -75,7 +75,7 @@ export default function RiskCard({ riskLevel, riskScore, sampleSize, prevScore =
                         letterSpacing: "-2px",
                     }}
                 >
-                    {riskScore !== null && riskScore !== undefined ? `${riskScore}%` : "—"}
+                    {riskScore !== null && riskScore !== undefined ? `${Number(riskScore).toFixed(1)}%` : "—"}
                 </Typography>
                 <Chip
                     label={cfg.label}
@@ -95,16 +95,19 @@ export default function RiskCard({ riskLevel, riskScore, sampleSize, prevScore =
             {delta !== null && (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                     {isDown
-                        ? <TrendingDownIcon sx={{ fontSize: 16, color: "#10b981" }} />
+                        ? <TrendingDownIcon sx={{ fontSize: 16, color: "#22c55e" }} />
                         : isUp
                             ? <TrendingUpIcon sx={{ fontSize: 16, color: "#ef4444" }} />
                             : null
                     }
                     <Typography variant="body2" sx={{
-                        color: isDown ? "#10b981" : isUp ? "#ef4444" : "text.secondary",
+                        color: isDown ? "#22c55e" : isUp ? "#ef4444" : "text.secondary",
                         fontWeight: 500,
                     }}>
-                        {delta > 0 ? "+" : ""}{delta}% respecto a la semana anterior
+                        {delta === 0
+                            ? "Sin cambios respecto a la semana anterior"
+                            : `${delta > 0 ? "+" : ""}${delta}% respecto a la semana anterior`
+                        }
                     </Typography>
                 </Box>
             )}

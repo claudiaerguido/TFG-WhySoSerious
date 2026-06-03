@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-    Box, Typography, Skeleton, Avatar, Chip, Divider, Paper
+    Box, Typography, Skeleton, Chip, Divider, Paper
 } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { fetchMyTeamsAndProjects, fetchTeamRisk, fetchProjectRisk } from "../../api/backend";
+import GroupsIcon from "@mui/icons-material/Groups";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import { fetchMyTeamsAndProjects, fetchTeamRisk, fetchProjectRisk } from "../../api/api";
 import "./TeamsPage.css";
 
 const CHIP_COLORS = {
@@ -16,6 +18,29 @@ const CHIP_COLORS = {
 function chipStyle(level) {
     const c = CHIP_COLORS[level] ?? { bg: '#f1f5f9', text: '#64748b' };
     return { bgcolor: c.bg, color: c.text, fontWeight: 700, fontSize: 11, border: 'none', height: 22 };
+}
+
+function WorkspaceIcon({ type }) {
+    const isTeam = type === "team";
+    const Icon = isTeam ? GroupsIcon : AssignmentOutlinedIcon;
+    return (
+        <Box
+            sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: isTeam ? "rgba(79, 70, 229, 0.08)" : "rgba(5, 150, 105, 0.08)",
+                color: isTeam ? "#4f46e5" : "#059669",
+                border: isTeam ? "1px solid rgba(79, 70, 229, 0.14)" : "1px solid rgba(5, 150, 105, 0.14)",
+                flex: "0 0 auto",
+            }}
+        >
+            <Icon sx={{ fontSize: 19 }} />
+        </Box>
+    );
 }
 
 function TeamRow({ item, type }) {
@@ -36,13 +61,7 @@ function TeamRow({ item, type }) {
             onClick={() => navigate(`/${type}/${item.id}`)}
         >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                <Avatar sx={{
-                    bgcolor: type === 'team' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.1)',
-                    color: type === 'team' ? 'primary.main' : 'success.main',
-                    width: 38, height: 38, fontSize: 13, fontWeight: 800
-                }}>
-                    {item.name.substring(0, 2).toUpperCase()}
-                </Avatar>
+                <WorkspaceIcon type={type} />
                 <Box>
                     <Typography variant="body1" fontWeight={700} color="text.primary" sx={{ lineHeight: 1.3 }}>
                         {item.name}

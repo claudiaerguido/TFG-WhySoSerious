@@ -1,7 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { fetchMe } from "../api/backend";
-
-const AuthContext = createContext(null);
+import { useState, useEffect } from "react";
+import { fetchMe } from "../api/api";
+import { AuthContext } from "./authState";
 
 /**
  * Provee { user, role, isLoading } a toda la app.
@@ -28,9 +27,4 @@ export function AuthProvider({ children }) {
             {children}
         </AuthContext.Provider>
     );
-}
-
-/** Hook para consumir el contexto de autenticación. */
-export function useMe() {
-    return useContext(AuthContext);
 }

@@ -13,21 +13,21 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 # ==========================================
 
 # Modelo de Producción (Emociones)
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/final_teams")
-THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "thresholds_phaseB.json")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/final_teams_backup_0806")
+THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "thresholds.json")
 
 # Modelo Baseline (Sentimiento Original - Estrellas)
 BASELINE_MODEL_ID = "nlptown/bert-base-multilingual-uncased-sentiment"
 
 # Etiquetas del modelo de emociones
-LABELS = ["TRISTEZA", "ESTRES_ANSIEDAD", "ENFADO_IRRITACION", "SOBRECARGA_URGENCIA", "CANSANCIO_FATIGA", "POSITIVO_ALIVIO", "NEUTRO"]
+LABELS = ["ESTRES_ANSIEDAD", "ENFADO_IRRITACION", "SOBRECARGA_URGENCIA", "CANSANCIO_FATIGA", "NEUTRO"]
 
 # Núcleo Operativo del TFG (Señales de Riesgo Psicosocial)
-OPERATIVE_CORE = ["ESTRES_ANSIEDAD", "SOBRECARGA_URGENCIA", "CANSANCIO_FATIGA"]
+OPERATIVE_CORE = ["ESTRES_ANSIEDAD", "ENFADO_IRRITACION", "SOBRECARGA_URGENCIA", "CANSANCIO_FATIGA"]
 
 class NLPModel:
     def __init__(self):
-        print(f"🔄 Cargando modelo NLP (Emociones) desde: {MODEL_PATH}")
+        print(f"Cargando modelo NLP (Emociones) desde: {MODEL_PATH}")
         self.model = None
         self.tokenizer = None
         
@@ -37,11 +37,11 @@ class NLPModel:
                 self.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
                 self.model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
                 self.model.eval()
-                print("✅ Modelo de Emociones cargado correctamente.")
+                print("Modelo de Emociones cargado correctamente.")
             else:
-                print(f"⚠️ No se encontró el modelo en {MODEL_PATH}")
+                print(f"No se encontró el modelo en {MODEL_PATH}")
         except Exception as e:
-            print(f"⚠️ Error cargando modelo de emociones: {e}")
+            print(f"Error cargando modelo de emociones: {e}")
 
         # 2. Carga del modelo baseline (Estrellas)
         self.base_tokenizer = None
@@ -50,13 +50,13 @@ class NLPModel:
             self.base_tokenizer = AutoTokenizer.from_pretrained(BASELINE_MODEL_ID)
             self.base_model = AutoModelForSequenceClassification.from_pretrained(BASELINE_MODEL_ID)
             self.base_model.eval()
-            print("✅ Modelo Baseline cargado.")
+            print("Modelo Baseline cargado.")
         except Exception as e:
-            print(f"⚠️ Error cargando baseline: {e}")
+            print(f"Error cargando baseline: {e}")
 
         # 3. Carga de umbrales dinámicos y reporte de inicio
         self.thresholds = self._load_thresholds()
-        print(f"📊 Umbrales de Calibración Estratégica: {self.thresholds}")
+        print(f"Umbrales de Calibración Estratégica: {self.thresholds}")
 
     def _load_thresholds(self):
         """Carga los umbrales dinámicos desde el archivo config."""
@@ -87,40 +87,6 @@ class NLPModel:
             detected = [label for label, prob in results.items() if prob >= self.thresholds.get(label, 0.5)]
             flags = [l for l in detected if l in OPERATIVE_CORE]
             
-            # 3. SALVAGUARDA QUIRÚRGICA: Rescate de autodeclaraciones explícitas
-            # Solo se aplica si el modelo ha neutralizado la frase pero el texto es literal.
-            text_lower = text.lower()
-            SAFEGUARDS = {
-                "ESTRES_ANSIEDAD": [
-                    r"\b(estoy|me siento|llevo|ando).*(estrés|estres)", 
-                    r"\b(estoy|me siento|ando).*agobiad", 
-                    r"\b(tengo|siento).*ansiedad"
-                ],
-                "SOBRECARGA_URGENCIA": [
-                    r"\bno llego\b", r"\bno doy abasto\b", 
-                    r"\b(tengo|llevo).*mucha.*carga", 
-                    r"\bse me.*junta.*trabajo", 
-                    r"\b(estoy|tengo).*sobrecarga"
-                ],
-                "CANSANCIO_FATIGA": [
-                    r"\b(estoy|me siento|ando).*cansad", 
-                    r"\b(estoy|me siento).*agotad", 
-                    r"\b(estoy|me siento).*sin energía"
-                ]
-            }
-
-            for label, patterns in SAFEGUARDS.items():
-                if label not in flags:
-                    for pattern in patterns:
-                        if re.search(pattern, text_lower):
-                            # Rescate directo tras validación regex del patrón de autodeclaración
-                            flags.append(label)
-                            
-                            # COHERENCIA ARQUITECTÓNICA: Elevamos el score para asegurar que 
-                            # la persistencia y el motor de riesgo vean la señal.
-                            target_threshold = self.thresholds.get(label, 0.5)
-                            results[label] = max(results[label], target_threshold)
-                            break
 
             # Limpiar duplicados y fallback a neutro
             flags = list(dict.fromkeys(flags)) or ["NEUTRO"]
@@ -132,7 +98,7 @@ class NLPModel:
                 "detected_labels": flags
             }
         except Exception as e:
-            print(f"❌ Error en predict: {e}")
+            print(f" Error en predict: {e}")
             return self._get_fallback_predict()
 
     def _get_fallback_predict(self):
@@ -164,7 +130,7 @@ class NLPModel:
                 "stars": int(idx + 1)
             }
         except Exception as e:
-            print(f"❌ Error en predict_sentiment: {e}")
+            print(f"Error en predict_sentiment: {e}")
             return {"label": "Error", "score": 0.0, "stars": 0}
 
 # Instancia global del servicio

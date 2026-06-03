@@ -9,7 +9,7 @@ Explicación: este test comprueba que, tras el inicio de sesión, el backend con
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from backend.services.permissions_service import get_user_role, get_supabase_client
+from backend.services.permissions_service import get_user_role
 
 @patch("backend.services.permissions_service.get_supabase_client")
 def test_validation_role_access(mock_client):
