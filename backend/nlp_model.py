@@ -1,19 +1,13 @@
-# nlp_model.py
-# Módulo de Inferencia para Clasificación de Texto Multilabel y Sentimiento (Estrellas)
-
 import torch
 import numpy as np
 import json
 import os
-import re
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# ==========================================
-# CONFIGURACIÓN DEL MODELO
-# ==========================================
+# --- Configuración del modelo ---
 
 # Modelo de Producción (Emociones)
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/final_teams_backup_0806")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/final_teams")
 THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "thresholds.json")
 
 # Modelo Baseline (Sentimiento Original - Estrellas)
@@ -54,7 +48,7 @@ class NLPModel:
         except Exception as e:
             print(f"Error cargando baseline: {e}")
 
-        # 3. Carga de umbrales dinámicos y reporte de inicio
+        # 3. Carga de umbrales dinámicos
         self.thresholds = self._load_thresholds()
         print(f"Umbrales de Calibración Estratégica: {self.thresholds}")
 
@@ -83,7 +77,7 @@ class NLPModel:
             probs = 1 / (1 + np.exp(-logits)) 
             results = {label: float(probs[i]) for i, label in enumerate(LABELS)}
             
-            # 1. Cálculo de etiquetas que superan el umbral (Alta Estabilidad)
+            # Etiquetas que superan el umbral de decisión
             detected = [label for label, prob in results.items() if prob >= self.thresholds.get(label, 0.5)]
             flags = [l for l in detected if l in OPERATIVE_CORE]
             

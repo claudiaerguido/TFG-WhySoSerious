@@ -1,13 +1,7 @@
-# Tipo: Validación
-# Requisitos cubiertos: RF18, RNF09
-# Objetivo: Verificar la persistencia histórica de métricas agregadas y la integridad básica de los datos almacenados.
-"""
-5. Test de persistencia (test_val_persistence.py)
-
-Qué valida: que los resultados calculados se guardan correctamente en Supabase.
-Explicación: el test comprueba que cada registro persiste con los campos esperados, como identificador del mensaje, usuario, fecha, puntuaciones emocionales y contexto de proyecto.
-"""
-import pytest
+# Tipo: Validación | Requisitos: RF18, RNF09
+# Objetivo: Comprobar que save_risk_metrics construye correctamente el registro antes de
+# persistirlo en Supabase — los campos obligatorios (email, message_id, puntuación, proyecto)
+# deben estar presentes y mapeados a las columnas correctas de la base de datos.
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 from backend.db_repository import save_risk_metrics
@@ -18,7 +12,7 @@ def test_validation_persistence():
     """
     REQ: RF18 y RNF09.
     DEFINICIÓN: El sistema debe conservar el histórico analítico con los campos técnicos necesarios y mantener una persistencia coherente.
-    VALIDACIÓN: Se ejecuta la función de guardado y se verifica mediante mocks que la llamada al ORM contiene todos los campos obligatorios: email, ID de mensaje, fecha, puntuación y proyecto asociado.
+    VALIDACIÓN: La llamada a upsert incluye user_email, message_id, la puntuación mapeada al nombre de columna correcto y el project_id.
     """
     mock_supabase = MagicMock()
     email = "test@tfg.com"

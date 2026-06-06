@@ -1,13 +1,5 @@
-# Tipo: Unitario
-# Requisitos cubiertos: RF10, RF11
-# Objetivo: Validar la robustez del cálculo analítico ante datos vacíos, valores anómalos y ausencia de personal operativo.
-"""
-7. Test de robustez (test_unit_robustness.py)
-
-Qué valida: que el sistema es resiliente ante datos inusuales, vacíos o fuera de rango.
-Explicación: estas pruebas aseguran que el software no se detenga ante errores (robusto) y que maneje con elegancia situaciones como equipos sin miembros operativos o puntuaciones imposibles de IA.
-"""
-import pytest
+# Tipo: Unitario | Requisitos: RF10, RF11
+# Prueba que el motor de riesgo no falla ante datos vacíos, valores fuera de rango o equipos sin empleados operativos.
 import pandas as pd
 from unittest.mock import patch, MagicMock
 
@@ -18,7 +10,7 @@ def test_risk_engine_empty_data():
     """
     REQ: RF10 (Detectar tono e inferir señales).
     DEFINICIÓN: El sistema debe ser robusto ante la ausencia de datos.
-    VALIDACIÓN: Se verifica que el motor de riesgo devuelve una serie vacía y no falla cuando no hay mensajes que procesar.
+    VALIDACIÓN: El motor devuelve una serie vacía sin lanzar excepción cuando el DataFrame de entrada está vacío.
     """
     df_empty = pd.DataFrame()
     risk_series = compute_pearson_msg_risk(df_empty)
@@ -27,8 +19,8 @@ def test_risk_engine_empty_data():
 def test_risk_engine_out_of_range():
     """
     REQ: RF10 (Detectar tono e inferir señales).
-    DEFINICIÓN: El sistema debe mitigar anomalías en las puntuaciones de la IA.
-    VALIDACIÓN: Comprueba que el sistema aplica un 'clip' a las puntuaciones fuera de rango [0, 1] antes de operar con ellas.
+    DEFINICIÓN: El sistema debe ser robusto ante puntuaciones imposibles del modelo NLP (por encima de 1 o por debajo de 0).
+    VALIDACIÓN: El resultado final siempre está dentro de [0, 1] aunque la entrada no lo esté.
     """
     data = {
         "estres_ansiedad": [1.5, -0.2], # Valores imposibles de la IA
@@ -45,7 +37,7 @@ def test_team_global_risk_no_employees_media(mock_client, mock_members):
     """
     REQ: RF11 (Calcular y mostrar indicador simple).
     DEFINICIÓN: El riesgo colectivo debe calcularse correctamente incluso en escenarios de personal incompleto.
-    VALIDACIÓN: Asegura que el cálculo de la media de equipo devuelve 0.0 (en lugar de error de división por cero) si no hay empleados reales disponibles.
+    VALIDACIÓN: Si no hay empleados operativos con datos, el riesgo de equipo es 0.0 y no se produce un error de división por cero.
     """
     mock_members.return_value = [
         {"user_email": "boss@tfg.com", "role": "manager"} # Solo un manager

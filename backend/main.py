@@ -39,9 +39,7 @@ from db_repository import (
 )
 from utils.date_ranges import get_fiscal_year_range
 
-# ==========================================
-# 1. CONFIGURACIÓN INICIAL & MIDDLEWARE
-# ==========================================
+# --- Configuración inicial & middleware ---
 
 # Cargamos variables de entorno desde .env si existe
 load_dotenv()
@@ -111,9 +109,7 @@ class SettingsRequest(BaseModel):
     fiscal_year_start_month: int
 
 
-# ==========================================
-# 2. HELPERS DE SEGURIDAD INTERNOS
-# ==========================================
+# --- Helpers de seguridad internos ---
 
 def _require_session(request: Request):
     """
@@ -125,7 +121,6 @@ def _require_session(request: Request):
         return None, None
     
     email = request.session.get("user_email", "")
-    # Se obtiene el rol directamente desde el servicio de permisos
     role  = get_user_role(email) if email else "employee"
     return email, role
 
@@ -189,9 +184,7 @@ def _can_manage_user(admin_email: str, admin_role: str, target_user_email: str) 
     return len(res.data or []) > 0
 
 
-# ==========================================
-# 3. RUTAS DE AUTENTICACIÓN (MICROSOFT)
-# ==========================================
+# --- Rutas de autenticación (Microsoft) ---
 
 @app.get("/api/auth-url")
 async def auth_url(request: Request):
@@ -208,7 +201,7 @@ async def login(request: Request):
 async def auth_callback(request: Request, code: str = None, state: str = None, error: str = None):
     """Callback tras autenticación exitosa en Microsoft."""
     if error:
-        print(f"⚠️ OAuth error: {error}")
+        print(f"OAuth error: {error}")
         return RedirectResponse(f"http://localhost:5173/login?error={error}")
     
     try:
@@ -227,13 +220,13 @@ async def auth_callback(request: Request, code: str = None, state: str = None, e
             request.session["display_name"] = display_name
             
             ensure_org_user(email, display_name)
-            print(f"✅ Login exitoso: {email}")
+            print(f"Login exitoso: {email}")
         except Exception as ep:
-            print(f"⚠️ Error obteniendo perfil: {ep}")
+            print(f"Error obteniendo perfil: {ep}")
 
         return RedirectResponse(f"{FRONTEND_URL}/")
     except Exception as e:
-        print(f"❌ Error en callback: {e}")
+        print(f"Error en callback: {e}")
         return RedirectResponse(f"{FRONTEND_URL}/?auth_failed=1")
 
 @app.get("/api/me")
@@ -275,7 +268,7 @@ async def me_info_full(request: Request):
             "initials": initials,
         })
     except Exception as e:
-        print(f"❌ Error en /api/me/info: {e}")
+        print(f"Error en /api/me/info: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/logout")
@@ -285,9 +278,7 @@ async def logout(request: Request):
     return RedirectResponse(f"{FRONTEND_URL}/login")
 
 
-# ==========================================
-# 4. GESTIÓN DE EQUIPOS & PROYECTOS
-# ==========================================
+# --- Gestión de equipos & proyectos ---
 
 @app.get("/api/my/workspaces")
 async def my_workspaces(request: Request):
@@ -366,7 +357,6 @@ async def team_member_breakdown(request: Request, user_email: str, days: int = 7
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
     
-    # Validación de seguridad mejorada
     if role not in ["admin", "manager"] and email != user_email:
         return JSONResponse({"error": "No tienes permiso para ver el desglose de este miembro"}, status_code=403)
         
@@ -397,9 +387,7 @@ async def employee_trend(request: Request, user_email: str, days: int = 30, star
     return JSONResponse(get_employee_risk_trend(user_email, days, start_date, end_date))
 
 
-# ==========================================
-# 5. ADMINISTRACIÓN & CONFIGURACIÓN TFG
-# ==========================================
+# --- Administración & configuración ---
 
 @app.post("/api/admin/trigger-analysis")
 async def trigger_analysis(request: Request):
@@ -424,10 +412,9 @@ async def get_settings(request: Request):
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
     
-    # Permitimos lectura a Managers y Admins
     if role not in ["admin", "manager"]:
         return JSONResponse({"error": "Acceso denegado"}, status_code=403)
-        
+
     db_sett = fetch_org_settings(get_supabase_client())
     
     # Valores por defecto si no existen
@@ -461,9 +448,7 @@ async def update_settings(request: Request, body: SettingsRequest):
     return {"status": "success" if success else "error"}
 
 
-# ==========================================
-# 6. GESTIÓN DE PROYECTOS (US-20)
-# ==========================================
+# --- Gestión de miembros de proyecto ---
 
 @app.get("/api/projects/catalog")
 async def projects_catalog(request: Request):
@@ -471,10 +456,9 @@ async def projects_catalog(request: Request):
     email, role = _require_session(request)
     if not email: return JSONResponse({"error": "No autenticado"}, status_code=401)
     
-    # Solo managers y admins ven el catálogo para gestión
     if role not in ["admin", "manager"]:
         return JSONResponse({"error": "Acceso denegado"}, status_code=403)
-        
+
     return JSONResponse(fetch_all_projects_catalog(get_supabase_client()))
 
 @app.post("/api/projects/members")
@@ -502,9 +486,7 @@ async def remove_project_member(request: Request, user_email: str, project_id: i
     return {"status": "success" if success else "error"}
 
 
-# ==========================================
-# 7. IA & PRUEBAS MANUALES (DEBUG)
-# ==========================================
+# --- IA & pruebas manuales ---
 
 @app.get("/health")
 def health_check():

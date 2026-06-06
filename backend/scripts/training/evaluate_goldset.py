@@ -3,13 +3,10 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import numpy as np
-from sklearn.metrics import classification_report, f1_score
+from sklearn.metrics import classification_report
 import nlp_model
-import json
 
-# ==========================================
-# 1. CONFIGURACIÓN DE LA EVALUACIÓN
-# ==========================================
+# --- Configuración de la evaluación ---
 
 # Dataset "Gold Standard": Conjunto de datos etiquetado y verificado manualmente por humanos.
 # Se utiliza como referencia absoluta (Ground Truth) para medir el rendimiento del modelo.
@@ -18,7 +15,7 @@ RESULTS_DIR = "results"
 ERRORS_CSV = os.path.join(RESULTS_DIR, "gold_errors.csv")
 SUMMARY_MD = os.path.join(RESULTS_DIR, "gold_summary.md")
 
-# Patrones Textuales Adversarios para Análisis de Errores Específicos
+# Palabras clave para detectar errores en casos concretos que nos interesan
 PATTERNS = {
     "Neutros Peligrosos": ["pendiente", "revisar", "agendar", "cuando puedas", "sin prisa", "echar un ojo"],
     "Sobrecarga Real": ["urgente", "hoy", "ya", "no llego", "bloquea", "plazo", "asap", "fuego"],
@@ -38,11 +35,11 @@ def main():
     
     # 2. CARGA DEL DATASET
     if not os.path.exists(GOLD_CSV):
-        print(f"❌ Error Crítico: No se encuentra el archivo {GOLD_CSV}.")
+        print(f"Error Crítico: No se encuentra el archivo {GOLD_CSV}.")
         return
 
     df = pd.read_csv(GOLD_CSV)
-    print(f"✅ Muestras a evaluar: {len(df)}")
+    print(f"Muestras a evaluar: {len(df)}")
     
     # 3. INFERENCIA Y COMPARACIÓN
     y_true = []
@@ -80,7 +77,6 @@ def main():
             score = pred_labels_dict.get(l, 0.0)
             th = thresholds.get(l, 0.5)
             
-            # Determinación de etiqueta positiva basada en umbral dinámico
             is_hit = score >= th
             if is_hit:
                  detected_labels.append(l)
@@ -106,7 +102,7 @@ def main():
                 for cat, keywords in PATTERNS.items():
                     hits = get_keywords_in_text(text, keywords)
                     if hits:
-                        # Registro de métricas específicas de negocio
+                        # Contamos solo los casos que realmente nos importan para los KPIs
                         if cat == "Neutros Peligrosos" and label == "SOBRECARGA_URGENCIA" and error_type == "FP":
                              pattern_stats[cat]["FP"] += 1
                         
@@ -137,7 +133,6 @@ def main():
     y_true_np = np.array(y_true)
     y_pred_np = np.array(y_pred)
     
-    # Generación de reporte de clasificación estándar (Precision, Recall, F1)
     report_dict = classification_report(y_true_np, y_pred_np, target_names=TARGET_LABELS, output_dict=True, zero_division=0)
     
     # 5. GENERACIÓN DE REPORTES
@@ -147,9 +142,9 @@ def main():
     # A. Archivo CSV de Errores (para inspección granular)
     df_errors = pd.DataFrame(error_analysis)
     df_errors.to_csv(ERRORS_CSV, index=False)
-    print(f"📄 CSV de Errores guardado: {ERRORS_CSV}")
+    print(f"CSV de Errores guardado: {ERRORS_CSV}")
     
-    # B. Resumen Ejecutivo en Markdown (para visualización rápida)
+    # B. Informe en Markdown con métricas y análisis de errores
     with open(SUMMARY_MD, "w") as f:
         f.write("# Informe de Evaluación del Modelo (Gold Set)\n\n")
         f.write(f"**Dataset:** `{GOLD_CSV}`\n")
@@ -176,7 +171,7 @@ def main():
             filtered = df_errors[df_errors["errors"].str.contains(f"{label}:{err_type}", na=False)]
             return filtered.head(n)
             
-        f.write("### ⚠️ Falsos Positivos: Sobrecarga (Alarmas Injustificadas)\n")
+        f.write("### Falsos Positivos: Sobrecarga (Alarmas Injustificadas)\n")
         fp_sobr = get_top_errors("SOBRECARGA_URGENCIA", "FP")
         if fp_sobr.empty:
             f.write("_Ninguno detectado._\n")
@@ -184,7 +179,7 @@ def main():
             for _, r in fp_sobr.iterrows():
                 f.write(f"- `{r['text']}` (Prob: {r['prob_SOBRECARGA_URGENCIA']}) -> Real: {r['true_labels']}\n")
         
-        f.write("\n### ❌ Falsos Negativos: Sobrecarga (Riesgos No Detectados)\n")
+        f.write("\n### Falsos Negativos: Sobrecarga (Riesgos No Detectados)\n")
         fn_sobr = get_top_errors("SOBRECARGA_URGENCIA", "FN")
         if fn_sobr.empty:
             f.write("_Ninguno detectado._\n")
@@ -199,23 +194,23 @@ def main():
         f.write(f"| **Neutros Adversarios** (pendiente, revisar...) | FP Sobrecarga: **{pattern_stats['Neutros Peligrosos']['FP']}** |\n")
         f.write(f"| **Sobrecarga Explícita** (urgente, plazo...) | FN Sobrecarga: **{pattern_stats['Sobrecarga Real']['FN']}** |\n")
         
-        # Validación de KPIs (Reglas de Negocio)
+        # Criterios de aceptación del modelo
         f.write("\n## 4. Validación de KPIs (Criterios de Aceptación)\n")
         
         # KPI A: Robustez ante falsos positivos en neutros
         fp_neutros_limit = 2 
         pass_a = pattern_stats['Neutros Peligrosos']['FP'] <= fp_neutros_limit
-        icon_a = "✅" if pass_a else "❌"
+        icon_a = "OK" if pass_a else "NO OK"
         f.write(f"- {icon_a} **KPI A:** Robustez ante 'Neutros Adversarios' (FP <= {fp_neutros_limit}). Actual: {pattern_stats['Neutros Peligrosos']['FP']}\n")
         
         # KPI B: Sensibilidad (Recall) en Sobrecarga
         rec_sobr = report_dict["SOBRECARGA_URGENCIA"]["recall"]
         limit_b = 0.80
         pass_b = rec_sobr >= limit_b
-        icon_b = "✅" if pass_b else "❌"
+        icon_b = "OK" if pass_b else "NO OK"
         f.write(f"- {icon_b} **KPI B:** Sensibilidad en Sobrecarga (Recall >= {limit_b}). Actual: {rec_sobr:.3f}\n")
         
-    print(f"📊 Informe Generado: {SUMMARY_MD}")
+    print(f"Informe Generado: {SUMMARY_MD}")
 
 if __name__ == "__main__":
     main()

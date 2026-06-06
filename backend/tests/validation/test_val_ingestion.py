@@ -1,13 +1,6 @@
-# Tipo: Validación
-# Requisitos cubiertos: RF04, RF19 (Parcial)
-# Objetivo: Verificar la asignación contextual de mensajes durante la ingesta automática.
-"""
-4. Test de ingesta y clasificación (test_val_ingestion.py)
-
-Qué valida: que el proceso automático de análisis clasifica cada mensaje en el contexto correcto.
-Explicación: el test simula la ingesta periódica de mensajes y comprueba si cada uno queda asignado a un proyecto concreto o, en ausencia de correspondencia, al contexto global.
-"""
-import pytest
+# Tipo: Validación | Requisitos: RF04, RF19 (Parcial)
+# Objetivo: Comprobar que find_best_project asigna cada chat al proyecto correcto según los
+# participantes, o al contexto global si no hay coincidencia total.
 from backend.scheduler_tasks import find_best_project
 
 def test_validation_ingestion_assignment():

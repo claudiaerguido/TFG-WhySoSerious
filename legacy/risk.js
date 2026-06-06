@@ -18,8 +18,3 @@ export const fmtPct = (v) => {
     const val = v <= 1 ? v * 100 : v;
     return `${Number(val).toFixed(2)}%`;
 };
-
-// ─── Tipo heurístico ─────────────────────────────────────────────────────────
-// pendiente de campo type en BD
-export const inferType = (name = "") =>
-    /proyecto|PRJ-/i.test(name) ? "Proyecto" : "Equipo";

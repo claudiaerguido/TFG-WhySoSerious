@@ -1,9 +1,8 @@
-# Objetivo: Validar los componentes transversales: motor de riesgo (Pearson), clasificación de niveles, permisos RBAC y asignación de contexto de proyecto.
+# Tests del motor de riesgo (Pearson), semaforización, permisos RBAC y asignación de proyecto.
 import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
 
-# Importaciones de los módulos core
 from backend.logic.risk_model import _risk_level, compute_pearson_msg_risk
 from backend.services.permissions_service import get_teams_and_projects_for_user
 from backend.scheduler_tasks import find_best_project
@@ -13,7 +12,7 @@ def test_risk_level_thresholds():
     """
     REQ: RF11 (Indicador simple de riesgo).
     DEFINICIÓN: El sistema debe categorizar el riesgo en niveles visuales (semaforización).
-    VALIDACIÓN: Se comprueba que los valores numéricos se asignan correctamente a las etiquetas Verde, Amarillo y Rojo según los umbrales.
+    VALIDACIÓN: Los valores numéricos se asignan a Verde, Amarillo y Rojo según los umbrales definidos.
     """
     assert _risk_level(15.0) == "Verde"
     assert _risk_level(25.0) == "Amarillo"
@@ -24,7 +23,7 @@ def test_compute_pearson_msg_risk_valid():
     """
     REQ: RF10 (Detectar tono e inferir señales).
     DEFINICIÓN: El sistema debe procesar las métricas de NLP para calcular un indicador de riesgo.
-    VALIDACIÓN: Se verifica que el motor de riesgo (Pearson) genera puntuaciones coherentes y normalizadas [0, 1] a partir de datos con varianza.
+    VALIDACIÓN: El motor Pearson genera puntuaciones normalizadas en [0, 1] y ordena correctamente los mensajes por intensidad.
     """
     data = {
         "estres_ansiedad": [0.8, 0.2, 0.9], 
@@ -44,7 +43,7 @@ def test_compute_pearson_msg_risk_fallback():
     """
     REQ: RF10 (Detectar tono e inferir señales).
     DEFINICIÓN: Robustez del motor ante falta de varianza estadística.
-    VALIDACIÓN: Comprueba que el sistema devuelve `risk_base` tras la calibración cuando no se puede calcular la correlación, asegurando continuidad del servicio sin forzar una ponderación inválida.
+    VALIDACIÓN: Cuando no hay varianza para calcular Pearson, el sistema cae al fallback de risk_base en vez de producir un resultado inválido.
     """
     data = {
         "estres_ansiedad": [0.5, 0.5, 0.5], 
@@ -65,7 +64,7 @@ def test_get_teams_and_projects_for_user_admin_returns_all(mock_client):
     """
     REQ: RF06 (Visibilidad ajustada al ámbito de responsabilidad).
     DEFINICIÓN: El administrador debe tener visibilidad total de la organización.
-    VALIDACIÓN: Se verifica que para un rol 'admin', la consulta a la base de datos no incluye filtros restrictivos por email.
+    VALIDACIÓN: Para un rol 'admin', la consulta no aplica filtros por email — devuelve todos los equipos y proyectos.
     """
     mock_supabase = MagicMock()
     mock_client.return_value = mock_supabase
@@ -84,7 +83,7 @@ def test_get_teams_and_projects_for_user_manager_returns_only_managed(mock_clien
     """
     REQ: RF06 (Visibilidad ajustada al ámbito de responsabilidad).
     DEFINICIÓN: Los responsables (managers) solo ven datos de sus equipos/proyectos.
-    VALIDACIÓN: Se comprueba que la lógica de permisos aplica filtros `eq` obligatorios sobre los campos de responsabilidad (manager_email/owner_email).
+    VALIDACIÓN: La lógica de permisos aplica filtros por manager_email y owner_email para limitar la visibilidad al ámbito del manager.
     """
     mock_supabase = MagicMock()
     mock_client.return_value = mock_supabase
@@ -104,7 +103,7 @@ def test_find_best_project():
     """
     REQ: RF04 y RF19 (Parcial).
     DEFINICIÓN: El sistema debe contextualizar los mensajes en el proyecto correspondiente durante el procesamiento automático.
-    VALIDACIÓN: Comprueba el algoritmo de búsqueda de proyecto 'más probable' basándose en los participantes del chat, garantizando que la ingesta asocia el mensaje al contexto organizativo correcto.
+    VALIDACIÓN: El algoritmo asigna el proyecto correcto cuando los miembros del chat son un subconjunto del proyecto, y devuelve None si no hay coincidencia.
     """
     all_projects = [
         {"id": 10, "members": ["ana@tfg.com", "carlos@tfg.com"]},

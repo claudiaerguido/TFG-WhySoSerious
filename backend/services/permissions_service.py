@@ -15,7 +15,7 @@ def ensure_org_user(email: str, display_name: str) -> None:
             ignore_duplicates=True,
         ).execute()
     except Exception as e:
-        print(f"⚠️ ensure_org_user error: {e}")
+        print(f"ensure_org_user error: {e}")
 
 def get_user_role(email: str) -> str:
     """
@@ -27,7 +27,7 @@ def get_user_role(email: str) -> str:
         res = supabase.table("org_users").select("role").eq("user_email", email).maybe_single().execute()
         return (res.data or {}).get("role", "employee")
     except Exception as e:
-        print(f"⚠️ get_user_role error: {e}")
+        print(f"get_user_role error: {e}")
         return "employee"
 
 def get_teams_and_projects_for_user(email: str, role: str) -> Dict[str, List[Dict[str, Any]]]:
@@ -68,5 +68,5 @@ def get_teams_and_projects_for_user(email: str, role: str) -> Dict[str, List[Dic
             "projects": res_p.data or []
         }
     except Exception as e:
-        print(f"⚠️ get_teams_and_projects_for_user error: {e}")
+        print(f"get_teams_and_projects_for_user error: {e}")
         return {"teams": [], "projects": []}

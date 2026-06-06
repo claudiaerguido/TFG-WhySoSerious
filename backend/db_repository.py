@@ -7,7 +7,6 @@ from logic.risk_model import DB_COLS, TARGET_LABELS
 # ── Miembros y Estructura ──────────────────────────────────────────────────
 
 def _fetch_members_from_table(supabase: Client, table_name: str, id_column: str, id_value: int, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
-    """Helper genérico para obtener miembros cruzando una tabla con 'org_users'."""
     try:
         q = supabase.table(table_name).select("user_email").eq(id_column, id_value)
         
@@ -39,16 +38,15 @@ def _fetch_members_from_table(supabase: Client, table_name: str, id_column: str,
             for email in emails
         ]
     except Exception as e:
-        print(f"⚠️ _fetch_members_from_table error [{table_name}]: {e}")
+        print(f"_fetch_members_from_table error [{table_name}]: {e}")
         return []
 
 def fetch_user_metadata(supabase: Client, user_email: str) -> Dict[str, Any]:
-    """Obtiene el nombre visible y el rol de un usuario."""
     try:
         res = supabase.table("org_users").select("display_name, role").eq("user_email", user_email).single().execute()
         return res.data or {}
     except Exception as e:
-        print(f"⚠️ fetch_user_metadata error [{user_email}]: {e}")
+        print(f"fetch_user_metadata error [{user_email}]: {e}")
         return {}
 
 def fetch_team_members(supabase: Client, team_id: int, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
@@ -75,7 +73,7 @@ def fetch_user_projects(supabase: Client, user_email: str, start_date: str = Non
         res = q.execute()
         return res.data or []
     except Exception as e:
-        print(f"⚠️ fetch_user_projects error: {e}")
+        print(f"fetch_user_projects error: {e}")
         return []
 
 # ── Gestión de Proyectos (US-20) ───────────────────────────────────────────
@@ -83,13 +81,8 @@ def fetch_user_projects(supabase: Client, user_email: str, start_date: str = Non
 def add_user_to_project(supabase: Client, user_email: str, project_id: int) -> bool:
     """Asocia un usuario a un proyecto (Evita duplicados vía upsert)."""
     try:
-        # Al añadir, aseguramos que end_date sea NULL (por si vuelve a entrar) y start_date sea actual
-        # En vez de upsert directo, comprobamos si ya está activo. Para simplificar, hacemos upsert
-        # asumiendo que on_conflict actualice los datos. 
-        # Supabase no soporta on_conflict parcial en upsert sin configurarlo bien, 
-        # así que es mejor buscar primero si existe un registro cerrado.
-        
-        # En la práctica, el upsert actualiza el end_date a null.
+        # Si el usuario ya estaba en el proyecto con end_date cerrado, el upsert lo reactiva.
+        # Supabase no permite on_conflict parcial sin config extra, así que esto es lo más limpio.
         supabase.table("project_members").upsert({
             "user_email": user_email,
             "project_id": project_id,
@@ -98,7 +91,7 @@ def add_user_to_project(supabase: Client, user_email: str, project_id: int) -> b
         }, on_conflict="user_email,project_id").execute()
         return True
     except Exception as e:
-        print(f"⚠️ add_user_to_project error: {e}")
+        print(f"add_user_to_project error: {e}")
         return False
 
 def remove_user_from_project(supabase: Client, user_email: str, project_id: int) -> bool:
@@ -110,7 +103,7 @@ def remove_user_from_project(supabase: Client, user_email: str, project_id: int)
         }).eq("user_email", user_email).eq("project_id", project_id).is_("end_date", "null").execute()
         return True
     except Exception as e:
-        print(f"⚠️ remove_user_from_project error: {e}")
+        print(f"remove_user_from_project error: {e}")
         return False
 
 def fetch_all_projects_catalog(supabase: Client) -> List[Dict[str, Any]]:
@@ -119,7 +112,7 @@ def fetch_all_projects_catalog(supabase: Client) -> List[Dict[str, Any]]:
         res = supabase.table("projects").select("id, name").order("name").execute()
         return res.data or []
     except Exception as e:
-        print(f"⚠️ fetch_all_projects_catalog error: {e}")
+        print(f"fetch_all_projects_catalog error: {e}")
         return []
 
 # ── Métricas y Persistencia ────────────────────────────────────────────────
@@ -169,7 +162,7 @@ def fetch_metrics_for_users(
                 
         return pd.DataFrame(q.execute().data or [])
     except Exception as e:
-        print(f"⚠️ fetch_metrics_for_users error: {e}")
+        print(f"fetch_metrics_for_users error: {e}")
         return pd.DataFrame()
 
 def save_risk_metrics(
@@ -181,7 +174,6 @@ def save_risk_metrics(
     project_id: int = None,
 ) -> None:
     """Guarda los scores de riesgo de un mensaje en la base de datos."""
-    # Los scores deben estar en el diccionario antes del upsert
     data: Dict[str, Any] = {
         "user_email": user_email,
         "message_timestamp": timestamp,
@@ -197,7 +189,7 @@ def save_risk_metrics(
         supabase.table("risk_metrics").upsert(data, on_conflict="message_id").execute()
     except Exception as e:
         if "duplicate" not in str(e).lower() and "unique" not in str(e).lower():
-            print(f"⚠️ save_risk_metrics error message_id={message_id}: {e}")
+            print(f"save_risk_metrics error message_id={message_id}: {e}")
 
 # ── Configuración Global ───────────────────────────────────────────────────
 
@@ -207,7 +199,7 @@ def fetch_org_settings(supabase: Client) -> Dict[str, Any]:
         res = supabase.table("org_settings").select("*").execute()
         return {item["key"]: item["value"] for item in (res.data or [])}
     except Exception as e:
-        print(f"⚠️ fetch_org_settings error: {e}")
+        print(f"fetch_org_settings error: {e}")
         return {}
 
 def save_org_settings(supabase: Client, settings: Dict[str, Any]) -> bool:
@@ -218,5 +210,5 @@ def save_org_settings(supabase: Client, settings: Dict[str, Any]) -> bool:
             supabase.table("org_settings").upsert(data, on_conflict="key").execute()
         return True
     except Exception as e:
-        print(f"⚠️ save_org_settings error: {e}")
+        print(f"save_org_settings error: {e}")
         return False

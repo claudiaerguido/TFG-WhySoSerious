@@ -36,7 +36,7 @@ def main():
     
     # Validar existencia del modelo base
     if not os.path.exists(MODEL_BASE):
-        print(f"❌ Error: No existe el modelo base en {MODEL_BASE}. Ejecuta train_teams.py primero.")
+        print(f"Error: No existe el modelo base en {MODEL_BASE}. Ejecuta train_teams.py primero.")
         return
 
     # ==========================================
@@ -71,7 +71,7 @@ def main():
     if not ds_train or not ds_val:
         return
 
-    print(f"✅ Datos de refinamiento cargados. Train: {len(ds_train)}")
+    print(f"Datos de refinamiento cargados. Train: {len(ds_train)}")
     
     # ==========================================
     # 3. TOKENIZER Y MODELO
@@ -137,10 +137,10 @@ def main():
     # ==========================================
     # 5. EJECUCIÓN
     # ==========================================
-    print("🚀 Iniciando refinamiento del modelo...")
+    print("Iniciando refinamiento del modelo...")
     trainer.train()
     
-    print(f"💾 Guardando modelo refinado (Polished) en {OUTPUT_DIR}")
+    print(f"Guardando modelo refinado (Polished) en {OUTPUT_DIR}")
     trainer.save_model(OUTPUT_DIR)
     tokenizer.save_pretrained(OUTPUT_DIR)
 

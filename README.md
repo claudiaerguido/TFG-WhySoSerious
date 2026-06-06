@@ -1,136 +1,86 @@
 # Why So Serious
 
-> Sistema de monitorización de riesgos psicosociales para entornos de trabajo basado en Microsoft Teams.
+Sistema de evaluación agregada de riesgo psicosocial en equipos de trabajo a partir de comunicaciones corporativas autorizadas en Microsoft Teams.
 
-**Why So Serious** analiza las comunicaciones de un equipo en Teams, detecta patrones de estrés, sobrecarga y fatiga mediante un clasificador de emociones propio (transformer fine-tuneado), y los visualiza en un dashboard de riesgo para que los responsables puedan actuar antes de que el problema escale.
+Este proyecto se ha desarrollado como Trabajo de Fin de Grado. Su objetivo no es leer ni interpretar conversaciones individuales, sino transformar señales lingüísticas ya existentes en indicadores agregados que ayuden a observar situaciones de sobrecarga, estrés, fatiga o conflicto dentro de equipos y proyectos. La solución combina autenticación corporativa, ingesta controlada mediante Microsoft Graph, inferencia con un modelo transformer fine-tuneado, cálculo de riesgo y visualización web con control de acceso por rol.
 
 ---
 
-## Tabla de Contenidos
+## Contenido
 
-- [Guía de Instalación para el Tribunal](#guia-de-instalacion-para-el-tribunal)
+- [Ejecución para evaluación](#ejecucion-para-evaluacion)
 - [Motivación](#motivacion)
-- [Arquitectura](#arquitectura)
+- [Arquitectura general](#arquitectura-general)
 - [Pipeline NLP](#pipeline-nlp)
-- [Motor de Riesgo](#motor-de-riesgo)
-- [Stack Tecnológico](#stack-tecnologico)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Variables de Entorno](#variables-de-entorno)
-- [Tests](#tests)
-- [Entrenamiento del Modelo](#entrenamiento-del-modelo)
-- [Métricas del Modelo](#metricas-del-modelo)
-- [API — Endpoints Principales](#api--endpoints-principales)
+- [Motor de riesgo](#motor-de-riesgo)
+- [Stack tecnológico](#stack-tecnologico)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Variables de entorno](#variables-de-entorno)
+- [Validación y tests](#validacion-y-tests)
+- [Entrenamiento del modelo](#entrenamiento-del-modelo)
+- [Métricas del modelo](#metricas-del-modelo)
+- [Endpoints principales](#endpoints-principales)
 
 ---
 
-## Guía de Instalación para el Tribunal
+## Ejecución para evaluación
 
-### Método recomendado — Docker (un solo comando)
+La forma recomendada de ejecutar el proyecto es mediante Docker Compose. De este modo, el tribunal no necesita instalar manualmente Python ni Node.js; únicamente debe disponer de Docker Desktop, del fichero `backend/.env` facilitado con la entrega y de conexión a Internet durante el primer arranque.
 
-Solo se necesita **Docker Desktop** instalado. No hace falta instalar manualmente Python ni Node.js en el equipo de evaluación, aunque sí es necesario disponer del fichero `.env` entregado junto al proyecto y de conexión a Internet para el arranque inicial y la autenticación corporativa.
+### Arranque con Docker
 
-Descarga Docker Desktop en [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) e instálalo. Verifica que está corriendo:
-
-```bash
-docker --version
-```
-
-#### Archivos incluidos en la entrega
-
-El paquete de entrega incluye todo lo necesario:
-
-| Archivo | Descripción |
-|---|---|
-| `ceu-whysoserious/` (carpeta o ZIP) | Código fuente completo + modelo NLP (~2.5 GB) |
-| `backend/.env` | Credenciales del proyecto (Supabase + Azure) |
-
-> El fichero `.env` se entrega junto al ZIP. Debe estar en `ceu-whysoserious/backend/.env` antes de ejecutar el siguiente paso.
-
-#### Paso 1 — Situar el `.env`
-
-Copia el fichero `.env` recibido dentro de la carpeta `backend/`:
-
-```
-ceu-whysoserious/
-└── backend/
-    └── .env   ← aquí
-```
-
-#### Paso 2 — Arrancar la aplicación
+Desde la raíz del repositorio:
 
 ```bash
 cd ceu-whysoserious
 docker compose up --build
 ```
 
-La primera vez tarda **10–15 minutos** (descarga dependencias y prepara el modelo). Las siguientes veces arranca mucho más rápido con `docker compose up`.
+La primera ejecución puede tardar varios minutos, ya que se construyen las imágenes del backend y del frontend. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
 
-Cuando aparezca en la terminal:
+| Servicio | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:8000 |
+| Estado del backend | http://localhost:8000/health |
+| Documentación de API | http://localhost:8000/docs |
 
-```
-Application startup complete.
-```
-
-la aplicación está lista.
-
-#### Paso 3 — Acceder
-
-1. Abre el navegador en **[http://localhost:5173](http://localhost:5173)**
-2. Haz clic en **"Iniciar sesión con Microsoft"**
-3. Usa las credenciales de la cuenta de demostración facilitadas con la entrega
-4. Serás redirigido al dashboard de riesgo con datos reales
-
-Para parar la aplicación: `Ctrl+C` en la terminal, luego `docker compose down`.
-
-#### Qué revisar durante la demo
-
-Una vez iniciada la sesión, el recorrido mínimo recomendado es:
-
-1. **Dashboard**: comprobar que se muestran indicadores agregados y tarjetas de estado general.
-2. **Equipos y proyectos**: abrir un equipo o proyecto visible y verificar el detalle con su tendencia temporal.
-3. **Perfil individual supervisado**: acceder, con la cuenta autorizada, a la vista individual restringida para comprobar que el control de acceso y el desglose por proyectos funcionan correctamente.
-
-#### Solución de problemas — Docker
-
-| Síntoma | Causa probable | Solución |
-|---|---|---|
-| `docker: command not found` | Docker Desktop no instalado o no iniciado | Abre Docker Desktop y espera a que el icono deje de girar |
-| `failed to read dockerfile` | No estás dentro de `ceu-whysoserious/` | Ejecuta `cd ceu-whysoserious` antes del comando |
-| El build falla con error de red | Sin conexión a internet durante el build | Conecta a internet y repite `docker compose up --build` |
-| `http://localhost:5173` no carga | Contenedores aún arrancando | Espera a ver `Application startup complete.` en la terminal |
-| Login falla con error de Microsoft | `.env` mal colocado o incompleto | Verifica que `backend/.env` existe con las variables correctas |
-| `"model": "loading"` en `/health` tras 2 min | Build incompleto | Para con `Ctrl+C`, ejecuta `docker compose up --build` de nuevo |
-
----
-
-### Método alternativo — Sin Docker
-
-Si no puedes instalar Docker, puedes levantar la aplicación manualmente con **Python 3.10+** y **Node.js 18+**.
-
-<details>
-<summary>Ver instrucciones de instalación manual</summary>
-
-Verifica que están instalados:
+Para detener la aplicación:
 
 ```bash
-python --version   # debe mostrar 3.10+
-node --version     # debe mostrar v18+
+Ctrl+C
+docker compose down
 ```
 
-**Backend** — abre una terminal:
+### Archivos necesarios
+
+El paquete de entrega debe conservar esta estructura:
+
+```text
+ceu-whysoserious/
+├── backend/
+│   ├── .env
+│   └── models/
+│       └── final_teams_backup_0806/
+├── frontend/
+└── docker-compose.yml
+```
+
+El fichero `.env` contiene las credenciales del entorno preparado para la evaluación. Por seguridad, no forma parte del repositorio público, pero debe estar presente en `backend/.env` antes de arrancar el sistema.
+
+### Ejecución sin Docker
+
+La ejecución manual se mantiene como alternativa para desarrollo:
 
 ```bash
 cd ceu-whysoserious/backend
 python -m venv venv
-source venv/bin/activate        # macOS / Linux
-# venv\Scripts\activate         # Windows CMD
+source venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-El backend estará en **http://localhost:8000**. Verifica con `http://localhost:8000/health` (espera `"model": "loaded"`).
-
-**Frontend** — abre una segunda terminal:
+En otra terminal:
 
 ```bash
 cd ceu-whysoserious/frontend
@@ -138,298 +88,265 @@ npm install
 npm run dev
 ```
 
-El frontend estará en **http://localhost:5173**.
+---
 
-| Síntoma | Solución |
-|---|---|
-| `ModuleNotFoundError` | Activa el entorno virtual antes de `uvicorn` |
-| `"model": "loading"` tras 1 min | Comprueba que `backend/models/final_teams/` contiene `model.safetensors` |
-| Frontend en blanco | Asegúrate de que el backend responde antes de abrir el navegador |
+## Motivación
 
-</details>
+Los riesgos psicosociales en el trabajo suelen hacerse visibles tarde: cuando ya se han producido ausencias, rotación, conflictos o deterioro del rendimiento. Las encuestas de clima y bienestar aportan información útil, pero dependen de la participación activa del empleado y no siempre capturan cambios progresivos en el día a día.
+
+Why So Serious explora una vía complementaria. Parte de comunicaciones corporativas autorizadas, extrae únicamente señales numéricas mediante PLN y las agrega por equipo y proyecto. La intención es ofrecer una herramienta preventiva, no un mecanismo de vigilancia individual. Por ello, el diseño evita persistir el texto original de los mensajes y restringe las vistas según el rol del usuario.
 
 ---
 
-## Motivacion
+## Arquitectura general
 
-Los riesgos psicosociales (estrés crónico, agotamiento, sobrecarga de trabajo) son la primera causa de baja laboral en Europa, pero son invisibles hasta que ya es tarde. Las encuestas de bienestar llegan tarde y tienen baja tasa de respuesta. Las comunicaciones del equipo, en cambio, son una señal continua y objetiva.
-
-**Why So Serious** convierte esa señal en inteligencia accionable: sin leer mensajes individuales, sin violar la privacidad, solo agregando emociones a nivel de equipo y proyecto.
-
----
-
-## Arquitectura
-
-```
+```text
 Microsoft Teams
-      │
-      │  (Microsoft Graph API — OAuth 2.0)
-      ▼
-┌─────────────────────────────────────────────┐
-│               Backend (FastAPI)              │
-│                                             │
-│  ┌──────────────┐    ┌───────────────────┐  │
-│  │  NLP Model   │───▶│   Risk Engine     │  │
-│  │ (Transformer)│    │ (Pearson scoring) │  │
-│  └──────────────┘    └───────────────────┘  │
-│          │                    │             │
-│          ▼                    ▼             │
-│  ┌──────────────────────────────────────┐   │
-│  │          Supabase (PostgreSQL)       │   │
-│  └──────────────────────────────────────┘   │
-│                                             │
-│  APScheduler → Pipeline nocturno (02:00)    │
-└─────────────────────────────────────────────┘
-      │
-      │  REST API (cookie auth)
-      ▼
-┌─────────────────────────────────────────────┐
-│            Frontend (React + Vite)           │
-│                                             │
-│  Dashboard · Equipos · Proyectos · Empleados│
-└─────────────────────────────────────────────┘
+      |
+      | Microsoft Graph API
+      v
+Backend FastAPI
+      |
+      | Limpieza HTML e inferencia NLP
+      v
+Modelo transformer multilabel
+      |
+      | Scores emocionales
+      v
+Motor de riesgo
+      |
+      | Métricas agregadas
+      v
+Supabase PostgreSQL
+      |
+      | REST API con sesión autenticada
+      v
+Frontend React + Vite
 ```
+
+El backend concentra la autenticación, la comunicación con Microsoft Graph, la inferencia del modelo, el cálculo del riesgo y el acceso a Supabase. El frontend se centra en la consulta visual de los resultados: dashboard global, equipos, proyectos, detalle temporal y perfil individual supervisado.
 
 ---
 
 ## Pipeline NLP
 
-El clasificador de emociones es un transformer fine-tuneado sobre mensajes de Teams en español. Implementa clasificación **multilabel**: un mensaje puede activar varias etiquetas simultáneamente.
+El módulo NLP utiliza un transformer fine-tuneado sobre mensajes de trabajo en español. La inferencia es multilabel, por lo que un mismo mensaje puede activar varias señales emocionales al mismo tiempo.
+
+El modelo activo se carga desde:
+
+```text
+backend/models/final_teams_backup_0806/
+```
 
 ### Etiquetas
 
-| Etiqueta              | Descripción                              | Rol en el riesgo      |
-|-----------------------|------------------------------------------|-----------------------|
-| `ESTRES_ANSIEDAD`     | Estrés agudo, preocupación, pánico       | Señal operativa       |
-| `SOBRECARGA_URGENCIA` | Presión de plazos, volumen de trabajo    | Señal operativa       |
-| `CANSANCIO_FATIGA`    | Agotamiento, desgaste acumulado          | Señal operativa       |
-| `ENFADO_IRRITACION`   | Frustración, conflicto                   | Señal operativa       |
-| `NEUTRO`              | Mensajes informativos sin carga afectiva | Línea base            |
+| Etiqueta | Descripción | Papel en el sistema |
+|---|---|---|
+| `ESTRES_ANSIEDAD` | Estrés, presión emocional o preocupación | Señal operativa |
+| `SOBRECARGA_URGENCIA` | Exceso de carga, urgencia o presión por plazos | Señal operativa |
+| `CANSANCIO_FATIGA` | Agotamiento, desgaste o falta de energía | Señal operativa |
+| `ENFADO_IRRITACION` | Frustración, tensión o conflicto | Señal operativa |
+| `NEUTRO` | Mensajes informativos sin carga emocional relevante | Fallback y línea base |
 
-Las cuatro señales operativas son las que alimentan el **observatorio de riesgo**. `TRISTEZA` y `POSITIVO_ALIVIO` fueron descartadas por no ser relevantes en contexto de riesgo psicosocial laboral.
+La implementación aplica umbrales por etiqueta, definidos en `backend/thresholds.json`. Si ninguna señal operativa supera su umbral, el resultado se considera `NEUTRO`. No se utiliza un sistema de expresiones regulares ni patrones léxicos para rescatar etiquetas: la decisión depende de la inferencia del modelo y del filtrado por umbral.
 
-### Umbrales dinámicos
+### Prueba rápida
 
-Los umbrales de decisión por etiqueta se calibran automáticamente y se almacenan en `backend/thresholds.json`. Si una probabilidad cae por debajo del umbral de su etiqueta, no contribuye al cálculo de riesgo (supresión de ruido).
-
-### Prueba rápida del NLP
-
-Una vez el backend está en marcha, puedes probar el modelo directamente:
+Con el backend arrancado:
 
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"text": "Estoy agotado y no llego a los plazos", "model": "final"}'
+  -d '{"text": "Estoy agotada y no llego a los plazos", "model": "final"}'
 ```
 
 ---
 
-## Motor de Riesgo
+## Motor de riesgo
 
-El algoritmo **Whysoserious** convierte los scores del modelo NLP en un semáforo de riesgo:
+El motor de riesgo convierte los scores emocionales en un indicador interpretable por equipo, proyecto o empleado supervisado. La escala final se expresa como porcentaje y se clasifica en tres niveles:
 
+```text
+Verde    riesgo < 20 %
+Amarillo 20 % <= riesgo < 35 %
+Rojo     riesgo >= 35 %
 ```
-Verde    →  riesgo < 20 %
-Amarillo →  20 % ≤ riesgo < 35 %
-Rojo     →  riesgo ≥ 35 %
-```
 
-### Metodología (`risk_model.py`)
+La lógica principal se encuentra en `backend/logic/risk_model.py`. De forma resumida:
 
-1. **Calibración**: Se suprimen intensidades por debajo del umbral calibrado para cada etiqueta.
-2. **`risk_base`**: Para cada mensaje, se toma la intensidad máxima de cualquier señal operativa (el «peor» indicador).
-3. **Pesos dinámicos (Pearson)**: Se calcula la correlación de Pearson entre cada señal operativa y `risk_base`. Esto determina qué emoción domina el contexto actual del equipo.
-4. **`msg_risk`**: Suma ponderada y normalizada al rango [0, 1].
-5. **Agregación**: A partir de `msg_risk`, el sistema calcula primero riesgos individuales medios. Después, el riesgo de proyecto se obtiene como la media del riesgo contextual de sus miembros operativos en ese proyecto, mientras que el riesgo de equipo se calcula como la media del riesgo global de sus integrantes operativos.
+1. Se descartan intensidades que no superan el umbral de su etiqueta.
+2. Para cada mensaje se calcula un riesgo base a partir de la señal operativa más intensa.
+3. Se estima la correlación de Pearson entre cada señal y el riesgo base para ponderar las señales que más acompañan al riesgo observado.
+4. Se obtiene un riesgo por mensaje normalizado.
+5. Los riesgos se agregan por empleado, proyecto y equipo, respetando los permisos de consulta.
+
+Esta aproximación permite que el peso de cada señal no sea completamente fijo, sino que se ajuste al comportamiento observado en el conjunto analizado.
 
 ---
 
-## Stack Tecnologico
+## Stack tecnológico
 
 ### Backend
+
 | Tecnología | Uso |
 |---|---|
-| **FastAPI** | API REST, middleware de sesión |
-| **Transformers (HuggingFace)** | Inferencia del modelo NLP |
-| **PyTorch** | Backend de cómputo del modelo |
-| **APScheduler** | Pipeline nocturno (02:00) |
-| **Supabase** | Base de datos PostgreSQL + cliente Python |
-| **requests** | Integración HTTP con Microsoft Graph y flujos OAuth 2.0 |
-| **python-dotenv** | Gestión de variables de entorno |
+| FastAPI | API REST, rutas y middleware de sesión |
+| Transformers | Carga e inferencia del modelo NLP |
+| PyTorch | Ejecución del modelo transformer |
+| APScheduler | Programación de la ingesta automática |
+| Supabase | Persistencia sobre PostgreSQL |
+| requests | Integración HTTP con Microsoft Graph |
+| python-dotenv | Lectura de variables de entorno |
 
 ### Frontend
+
 | Tecnología | Uso |
 |---|---|
-| **React 18 + Vite** | SPA y build tool |
-| **MUI v7** | Librería de componentes |
-| **TanStack Query** | Fetching y caché de datos |
-| **React Router v6** | Enrutado con auth guard |
+| React 19 + Vite | Aplicación SPA y build del cliente |
+| Material UI v7 | Componentes de interfaz |
+| TanStack Query | Consulta y caché de datos |
+| React Router v7 | Navegación y protección de rutas |
+| Recharts | Visualización de tendencias |
 
 ---
 
-## Estructura del Proyecto
+## Estructura del proyecto
 
-```
+```text
 ceu-whysoserious/
 ├── backend/
-│   ├── main.py                  # FastAPI app — rutas y middleware
-│   ├── nlp_model.py             # Inferencia del transformer
-│   ├── scheduler_tasks.py       # Pipeline nocturno
-│   ├── thresholds.json          # Umbrales calibrados por etiqueta
-│   ├── .env                     # Credenciales (NO en git — incluido en entrega)
+│   ├── main.py
+│   ├── nlp_model.py
+│   ├── scheduler_tasks.py
+│   ├── thresholds.json
 │   ├── auth/
-│   │   ├── auth_graph_web.py    # OAuth flujo web (usuario)
-│   │   └── auth_graph_app.py    # Auth app-only (pipeline)
 │   ├── logic/
-│   │   └── risk_model.py        # Algoritmo Whysoserious (Pearson)
 │   ├── services/
-│   │   ├── risk_service.py      # Agregación de riesgo para la API
-│   │   └── permissions_service.py # RBAC — roles y accesos
-│   ├── db_client.py             # Inicialización del cliente Supabase
-│   ├── db_repository.py         # CRUD — todas las queries a Supabase
 │   ├── models/
-│   │   └── final_teams/         # Modelo fine-tuneado (~2.5 GB — incluido en entrega)
+│   │   └── final_teams_backup_0806/
 │   ├── scripts/
-│   │   └── training/            # Scripts de entrenamiento y evaluación
+│   │   └── training/
 │   └── tests/
-│       ├── unit/                # Tests del motor de riesgo y RBAC
-│       └── validation/          # Tests de año fiscal, proyectos, privacidad
-│
-└── frontend/
-    └── src/
-        ├── api/api.js               # Cliente HTTP único (credentials: include)
-        ├── context/AuthContext.jsx  # Estado de sesión global
-        ├── main.jsx                 # Router + auth guard
-        └── pages/
-            ├── Dashboard/           # Vista principal de riesgo global
-            ├── Teams/               # Vista por equipo
-            ├── ProjectDetail/       # Detalle de proyecto con tendencia temporal
-            ├── EmployeeProfile/     # Perfil de empleado y desglose por proyecto
-            └── Login/               # Pantalla de autenticación Microsoft
+├── frontend/
+│   └── src/
+├── docs/
+├── legacy/
+├── docker-compose.yml
+└── GUIA_IMPLANTACION.md
 ```
+
+La carpeta `legacy/` conserva material histórico, prototipos y resultados de fases anteriores. No forma parte del flujo activo de ejecución ni se incluye en el contexto Docker.
 
 ---
 
-## Variables de Entorno
+## Variables de entorno
 
-El fichero `backend/.env` se entrega junto al código. Su estructura es:
+El backend lee su configuración desde `backend/.env`:
 
 ```env
-# Azure AD (Microsoft Graph — OAuth 2.0)
 TENANT_ID=<tenant-id>
-CLIENT_ID=<app-client-id>
-CLIENT_SECRET=<app-client-secret>
+CLIENT_ID=<client-id>
+CLIENT_SECRET=<client-secret>
 REDIRECT_URI=http://localhost:8000/auth/callback
 
-# Supabase (base de datos)
-SUPABASE_URL=https://<project>.supabase.co
-SUPABASE_KEY=<service-role-key>
+SUPABASE_URL=<supabase-url>
+SUPABASE_KEY=<supabase-service-role-key>
+
+SESSION_SECRET_KEY=<clave-larga-aleatoria>
+FRONTEND_URL=http://localhost:5173
+APP_ORIGIN=http://localhost:8000
 ```
 
-> No es necesario crear ninguna cuenta ni registrar ninguna aplicación en Azure — las credenciales del `.env` apuntan al tenant y a la base de datos del proyecto.
+En la entrega del TFG, estas credenciales corresponden al entorno preparado para la demostración. Si el proyecto se adapta a otra organización, deben sustituirse por valores propios de Azure AD y Supabase.
 
 ---
 
-## Tests
+## Validación y tests
 
-Los tests se ejecutan desde `ceu-whysoserious/` para que `conftest.py` inyecte correctamente los paths.
+Las pruebas automatizadas cubren la lógica de riesgo, el control de acceso, la privacidad y varios casos de agregación temporal.
+
+Desde la raíz del repositorio:
 
 ```bash
-cd ceu-whysoserious
-
-# Todos los tests
 pytest
-
-# Solo unitarios
-pytest backend/tests/unit/
-
-# Solo validación
-pytest backend/tests/validation/
-
-# Un test concreto
-pytest backend/tests/unit/test_unit_core.py::test_risk_level_thresholds
 ```
 
-### Suites
+También pueden ejecutarse por bloques:
 
-| Suite | Qué cubre |
+```bash
+pytest backend/tests/unit/
+pytest backend/tests/validation/
+pytest backend/tests/legacy/
+```
+
+| Suite | Cobertura principal |
 |---|---|
-| `tests/unit/` | Motor de riesgo (Pearson), RBAC, robustez del NLP |
-| `tests/validation/` | Año fiscal, riesgo por proyecto, privacidad, control de acceso |
-| `tests/legacy/` | Smoke tests de autenticación |
+| `unit/` | Motor de riesgo, RBAC y robustez básica |
+| `validation/` | Riesgo por equipo/proyecto, año fiscal, privacidad y persistencia |
+| `legacy/` | Smoke test del flujo de autenticación |
 
 ---
 
-## Entrenamiento del Modelo
+## Entrenamiento del modelo
 
-El modelo activo está en `backend/models/final_teams/` (incluido en el paquete de entrega). Para reentrenar desde cero:
+El modelo activo incluido en la entrega es `backend/models/final_teams_backup_0806/`. Los scripts de entrenamiento y evaluación se mantienen en `backend/scripts/training/`.
 
 ```bash
 cd ceu-whysoserious/backend
 source venv/bin/activate
-
-# Entrenar (~20 min en GPU)
 python scripts/training/train_teams.py
-
-# Evaluar en el gold set
 python scripts/training/evaluate_goldset.py
 ```
 
-Los datasets de entrenamiento están en `data/` (raíz del proyecto):
+Los datasets están en la carpeta `data/`, situada en la raíz del proyecto:
 
-| Archivo | Muestras | Uso |
-|---|---|---|
-| `teams_train_manual.csv` | 714 | Entrenamiento |
-| `teams_val_manual.csv` | 170 | Validación durante training |
-| `teams_goldset_120.csv` | 173 | Evaluación final (held-out — no usar para generar ejemplos) |
+| Archivo | Uso |
+|---|---|
+| `teams_train_manual.csv` | Entrenamiento |
+| `teams_val_manual.csv` | Validación durante entrenamiento |
+| `teams_goldset_120.csv` | Evaluación final mantenida aparte |
 
-### Decisiones de entrenamiento
-
-- `TRISTEZA` y `POSITIVO_ALIVIO` excluidas — no relevantes en psicología ocupacional
-- `SOBRECARGA_URGENCIA` excluida del oversampling — ya era la clase mayoritaria (30%); solo `CANSANCIO_FATIGA` recibe boost 5×
-- `ENFADO_IRRITACION` incluida en el núcleo operativo
+Durante el desarrollo se descartaron etiquetas que no aportaban valor directo al riesgo psicosocial observado, como `TRISTEZA` o `POSITIVO_ALIVIO`, y se mantuvo un núcleo operativo centrado en estrés, sobrecarga, fatiga e irritación.
 
 ---
 
-## Metricas del Modelo
+## Métricas del modelo
 
-Evaluación sobre `teams_goldset_120.csv` (173 muestras — held-out):
+Evaluación sobre `teams_goldset_120.csv`:
 
-| Etiqueta              | Precisión | Recall | F1-Score |
-|-----------------------|-----------|--------|----------|
-| ESTRES_ANSIEDAD       | 0.789     | 0.698  | 0.800    |
-| SOBRECARGA_URGENCIA   | 0.786     | 0.825  | 0.816    |
-| CANSANCIO_FATIGA      | 0.632     | 0.960  | 0.773    |
-| ENFADO_IRRITACION     | 0.812     | 0.929  | 0.815    |
-| NEUTRO                | 0.889     | 0.816  | **0.848** |
-| **Macro AVG**         | —         | —      | **0.810** |
+| Etiqueta | Precisión | Recall | F1-score |
+|---|---:|---:|---:|
+| `ESTRES_ANSIEDAD` | 0.789 | 0.698 | 0.800 |
+| `SOBRECARGA_URGENCIA` | 0.786 | 0.825 | 0.816 |
+| `CANSANCIO_FATIGA` | 0.632 | 0.960 | 0.773 |
+| `ENFADO_IRRITACION` | 0.812 | 0.929 | 0.815 |
+| `NEUTRO` | 0.889 | 0.816 | 0.848 |
+| Macro avg | | | 0.810 |
 
-### KPI de aceptación
-
-- **Robustez ante Neutros Adversarios** (mensajes neutrales mal clasificados como Sobrecarga): `FP = 1` ✅ (umbral ≤ 2)
+Estas métricas deben interpretarse como una validación offline del clasificador lingüístico. La validación del impacto organizativo real queda fuera del alcance del TFG y requeriría un estudio empírico posterior.
 
 ---
 
-## API — Endpoints Principales
+## Endpoints principales
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/health` | Estado del servidor y carga del modelo |
-| `POST` | `/predict` | Prueba manual del motor NLP |
-| `GET` | `/api/me` | Perfil del usuario en sesión |
-| `GET` | `/login` | Inicia flujo OAuth con Microsoft |
-| `GET` | `/auth/callback` | Callback OAuth, crea sesión |
-| `GET` | `/logout` | Cierra sesión |
-| `GET` | `/api/my/workspaces` | Equipos y proyectos accesibles por el usuario |
-| `GET` | `/api/teams/risk` | Riesgo del equipo con tendencia temporal |
-| `GET` | `/api/projects/risk` | Riesgo táctico de un proyecto |
-| `GET` | `/api/employees/profile` | Perfil completo de riesgo de un empleado |
-| `POST` | `/api/admin/trigger-analysis` | Dispara el pipeline manualmente |
+| `GET` | `/health` | Estado del backend y carga del modelo |
+| `POST` | `/predict` | Prueba manual del clasificador NLP |
+| `GET` | `/api/me` | Usuario autenticado |
+| `GET` | `/login` | Inicio del flujo OAuth |
+| `GET` | `/auth/callback` | Callback OAuth |
+| `GET` | `/logout` | Cierre de sesión |
+| `GET` | `/api/my/workspaces` | Equipos y proyectos visibles |
+| `GET` | `/api/teams/risk` | Riesgo agregado por equipo |
+| `GET` | `/api/projects/risk` | Riesgo agregado por proyecto |
+| `GET` | `/api/employees/profile` | Perfil supervisado de empleado |
+| `POST` | `/api/admin/trigger-analysis` | Lanzamiento manual de la ingesta |
 
-> Todos los endpoints (excepto `/health` y `/predict`) requieren sesión activa. La autorización está gestionada por RBAC (`permissions_service.py`); los roles se almacenan en Supabase.
+Salvo `/health` y `/predict`, los endpoints requieren sesión activa. La autorización se aplica desde `permissions_service.py`, de acuerdo con el rol y el ámbito organizativo del usuario.
 
 ---
 
 ## Licencia
 
-Proyecto académico — Trabajo de Fin de Grado, CEU Universidad San Pablo.
+Proyecto académico desarrollado como Trabajo de Fin de Grado en CEU Universidad San Pablo.

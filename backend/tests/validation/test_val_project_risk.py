@@ -1,13 +1,6 @@
-# Tipo: Validación
-# Requisitos cubiertos: RF12
-# Objetivo: Verificar el cálculo y la visualización del indicador de riesgo táctico por proyecto.
-"""
-3. Test de riesgo táctico de proyecto (test_val_project_risk.py)
-
-Qué valida: que el sistema calcula el riesgo contextual de un proyecto concreto.
-Explicación: este test asegura que los mensajes asociados a un proyecto solo afectan al indicador de ese proyecto, sin contaminar otros contextos de trabajo del mismo empleado.
-"""
-import pytest
+# Tipo: Validación | Requisitos: RF12
+# Objetivo: Comprobar que get_project_tactical_risk calcula el riesgo táctico como la media
+# de los riesgos individuales de los empleados en ese proyecto, sin mezclar datos de otros contextos.
 from unittest.mock import patch, MagicMock
 from backend.services.risk_service import get_project_tactical_risk
 
@@ -21,7 +14,7 @@ def test_validation_tactical_project_risk(mock_db, mock_members, mock_emp_proj_r
     """
     REQ: RF12.
     DEFINICIÓN: El sistema debe mostrar el riesgo táctico de un proyecto concreto.
-    VALIDACIÓN: Se comprueba que el indicador calculado para el proyecto es la media de los riesgos individuales de sus miembros en ese contexto, asegurando la segregación de datos por proyecto.
+    VALIDACIÓN: El riesgo del proyecto es la media de los riesgos de sus empleados en ese contexto — en este caso (0.4 + 0.2) / 2 = 30.0% → Amarillo.
     """
     res = get_project_tactical_risk(10, days=7)
     

@@ -56,7 +56,7 @@ export default function AppShell() {
 
     const drawerContent = (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "#fff" }}>
-            {/* Logo Professional Redesign */}
+            {/* Logo */}
             <Box sx={{ px: 3.5, py: 4.5, display: "flex", alignItems: "center", gap: 2 }}>
                 <Box sx={{
                     position: 'relative',
@@ -223,8 +223,8 @@ export default function AppShell() {
                                     sx={{ bgcolor: "primary.main", width: 38, height: 38, fontSize: 14, fontWeight: 700, boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)', cursor: 'pointer', '&:hover': { opacity: 0.85 } }}
                                 >
                                     {user?.display_name
-                        ? user.display_name.split(" ").map(p => p[0]).join("").substring(0, 2).toUpperCase()
-                        : "U"}
+                                        ? user.display_name.split(" ").map(p => p[0]).join("").substring(0, 2).toUpperCase()
+                                        : "U"}
                                 </Avatar>
                             </Tooltip>
                             <Tooltip title="Cerrar sesión">

@@ -1,8 +1,7 @@
 # Tipo: Validación
 # Requisitos cubiertos: RF15, RF16
-# Objetivo: Verificar el cálculo y aplicación correcta del rango temporal correspondiente al año fiscal configurado.
+# Objetivo: Comprobar que get_fiscal_year_range calcula correctamente el rango de fechas según el mes de inicio configurado.
 
-import pytest
 from datetime import date
 from unittest.mock import patch, MagicMock
 
@@ -14,7 +13,7 @@ def test_fy_range_calculation_january(mock_date):
     """
     REQ: RF15 y RF16.
     DEFINICIÓN: El cálculo del año fiscal debe ser preciso incluso si coincide con el año natural.
-    VALIDACIÓN: Se inyecta una fecha simulada en abril de 2026 y se comprueba que, para un inicio en enero, el rango resultante es el año completo 2026.
+    VALIDACIÓN: Con fecha simulada en abril de 2026 y FY iniciando en enero, el rango debe cubrir el año completo 2026.
     """
     mock_date.today.return_value = date(2026, 4, 11)
     mock_date.side_effect = lambda *args, **kwargs: date(*args, **kwargs)

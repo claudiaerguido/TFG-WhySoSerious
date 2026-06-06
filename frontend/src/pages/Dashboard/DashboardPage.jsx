@@ -1,12 +1,11 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-    Box, Grid, Card, CardContent, Typography, Skeleton, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton
+    Box, Grid, Card, CardContent, Typography, Skeleton, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import GroupsIcon from "@mui/icons-material/Groups";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import { fetchMyTeamsAndProjects, fetchTeamRisk, fetchProjectRisk } from "../../api/api";
@@ -216,7 +215,6 @@ export default function DashboardPage() {
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Muestra</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Puntuación de Riesgo</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Nivel</TableCell>
-                                    <TableCell align="right" sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Acción</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -265,11 +263,6 @@ export default function DashboardPage() {
                                                     sx={chipStyle(ws.level)}
                                                 />
                                             )}
-                                        </TableCell>
-                                        <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
-                                            <IconButton size="small">
-                                                <MoreHorizIcon sx={{ color: 'text.disabled' }} />
-                                            </IconButton>
                                         </TableCell>
                                     </TableRow>
                                 ))}

@@ -63,9 +63,9 @@ Para no hacernos trampas al solitario, creamos un archivo sagrado: `evaluate_gol
 1.  **Frontend (React):** Interfaz limpia que pide predicción.
 2.  **Backend (FastAPI - `main.py`):** Recibe la petición.
 3.  **Cerebro (`nlp_model.py`):**
-    - Carga modelo `.pt` optimizado.
-    - Aplica Umbrales (`thresholds_phaseB.json`).
-    - Filtra con lógica de negocio (Neural Gating).
+    - Carga el modelo transformer fine-tuneado.
+    - Aplica umbrales por etiqueta.
+    - Devuelve `NEUTRO` cuando ninguna señal supera el umbral.
 4.  **Salida:** JSON con probabilidades exactas y alertas visuales.
 
 Hemos pasado de un modelo que "adivinaba estrellas" a un sistema capaz de distinguir entre "estar cansado" y "estar quemado (burnout)".

@@ -30,7 +30,7 @@ export function useRiskFilters(initialDays = 7) {
         }
     };
 
-    // Derived values for API consumption
+    // Fechas derivadas según el modo de filtro seleccionado
     const queryStart =
         rangeMode === "custom" ? customRange.start :
             rangeMode === "fiscal" ? fySettings?.fy_start_date :

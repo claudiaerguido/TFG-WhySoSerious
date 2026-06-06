@@ -1,363 +1,274 @@
-# Guía de Implantación — Why So Serious
+# Guía de implantación
 
-Sistema de monitorización de riesgo psicosocial para Microsoft Teams.
+Esta guía recoge los pasos necesarios para poner en marcha Why So Serious en el entorno preparado para la evaluación del TFG. También incluye una sección final con las consideraciones necesarias si se quisiera adaptar el sistema a otra organización.
+
+La vía recomendada para la entrega es Docker Compose, porque reduce el número de pasos manuales y permite ejecutar backend y frontend de forma conjunta.
 
 ---
 
-## Arranque rápido
+## 1. Ejecución con Docker
 
-Una vez completada la configuración, el sistema requiere **dos terminales abiertas simultáneamente**:
+### 1.1 Requisitos previos
 
-**Terminal 1 — Backend:**
+Antes de arrancar el proyecto es necesario contar con:
+
+| Requisito | Motivo |
+|---|---|
+| Docker Desktop | Construir y ejecutar los contenedores |
+| `backend/.env` | Cargar credenciales y configuración del entorno |
+| Conexión a Internet | Construcción inicial y autenticación con Microsoft |
+
+Puede comprobarse que Docker está disponible con:
+
+```bash
+docker --version
+docker compose version
+```
+
+### 1.2 Estructura esperada
+
+El fichero `.env` debe encontrarse en la carpeta del backend:
+
+```text
+ceu-whysoserious/
+└── backend/
+    └── .env
+```
+
+El modelo utilizado por el código se encuentra en:
+
+```text
+ceu-whysoserious/backend/models/final_teams_backup_0806/
+```
+
+Para la inferencia son necesarios los ficheros del modelo y del tokenizer, entre ellos `model.safetensors`, `config.json`, `tokenizer.json`, `tokenizer_config.json`, `special_tokens_map.json`, `training_args.bin` y `vocab.txt`.
+
+### 1.3 Arranque de la aplicación
+
+Desde la raíz del repositorio:
+
+```bash
+cd ceu-whysoserious
+docker compose up --build
+```
+
+La primera ejecución puede tardar varios minutos. Docker instala las dependencias, construye el frontend y prepara el backend. Cuando aparezca el mensaje `Application startup complete.`, el servidor estará listo para recibir peticiones.
+
+### 1.4 Acceso a los servicios
+
+| Servicio | URL |
+|---|---|
+| Aplicación web | http://localhost:5173 |
+| Backend | http://localhost:8000 |
+| Comprobación de estado | http://localhost:8000/health |
+| Documentación OpenAPI | http://localhost:8000/docs |
+
+Para detener los contenedores:
+
+```bash
+Ctrl+C
+docker compose down
+```
+
+### 1.5 Comprobación mínima
+
+Una vez arrancado el sistema, se recomienda:
+
+1. Abrir `http://localhost:8000/health`.
+2. Confirmar que la respuesta indica `"status": "ok"` y `"model": "loaded"`.
+3. Abrir `http://localhost:5173`.
+4. Iniciar sesión con Microsoft.
+5. Revisar el dashboard y alguna vista de equipo o proyecto.
+
+---
+
+## 2. Ejecución local sin Docker
+
+Este modo se conserva como alternativa para desarrollo o depuración. Para la evaluación del tribunal se recomienda utilizar Docker.
+
+### 2.1 Backend
+
 ```bash
 cd ceu-whysoserious/backend
-source venv/bin/activate        # Windows: venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 uvicorn main:app --reload
-# Disponible en http://localhost:8000
 ```
 
-**Terminal 2 — Frontend:**
+En Windows, la activación del entorno se realiza con:
+
+```bash
+venv\Scripts\activate
+```
+
+El backend queda disponible en `http://localhost:8000`.
+
+### 2.2 Frontend
+
+En otra terminal:
+
 ```bash
 cd ceu-whysoserious/frontend
+npm install
 npm run dev
-# Disponible en http://localhost:5173
 ```
 
-Abre el navegador en `http://localhost:5173` e inicia sesión con tu cuenta de Microsoft.
-
-> Para producción, usa `npm run build` en el frontend y despliega la carpeta `dist/` en tu servidor web. El backend se puede servir sin `--reload`.
+El frontend queda disponible en `http://localhost:5173`. En desarrollo, el cliente consume la API desde `http://localhost:8000`, tal como se define en `frontend/src/api/api.js`.
 
 ---
 
-## Qué necesitas antes de empezar
+## 3. Configuración del entorno
 
-| Requisito | Para qué sirve |
+El backend utiliza el fichero `backend/.env`. En la entrega del TFG este fichero ya contiene las credenciales del entorno preparado para la demostración.
+
+```env
+TENANT_ID=<tenant-id>
+CLIENT_ID=<client-id>
+CLIENT_SECRET=<client-secret>
+REDIRECT_URI=http://localhost:8000/auth/callback
+
+SUPABASE_URL=<supabase-url>
+SUPABASE_KEY=<supabase-service-role-key>
+
+SESSION_SECRET_KEY=<clave-larga-aleatoria>
+FRONTEND_URL=http://localhost:5173
+APP_ORIGIN=http://localhost:8000
+```
+
+| Variable | Descripción |
 |---|---|
-| Tenant de Microsoft 365 con Teams activo | El sistema lee los mensajes de Teams de tu organización |
-| Cuenta de administrador de Azure AD | Para registrar la aplicación y darle permisos |
-| Cuenta en [Supabase](https://supabase.com) (gratuita) | Base de datos donde se guardan los análisis |
-| Servidor con Python 3.9+ y Node.js 18+ | Para ejecutar el backend y el frontend |
+| `TENANT_ID` | Identificador del tenant de Azure AD |
+| `CLIENT_ID` | Identificador de la aplicación registrada |
+| `CLIENT_SECRET` | Secreto de cliente de Azure |
+| `REDIRECT_URI` | URL de retorno del flujo OAuth |
+| `SUPABASE_URL` | URL del proyecto Supabase |
+| `SUPABASE_KEY` | Clave `service_role` de Supabase |
+| `SESSION_SECRET_KEY` | Clave usada para firmar la sesión |
+| `FRONTEND_URL` | URL del cliente web |
+| `APP_ORIGIN` | URL pública del backend |
 
 ---
 
-## Paso 1 — Registrar la aplicación en Azure AD
+## 4. Adaptación a otra organización
 
-El sistema necesita que Microsoft le dé permiso para leer los mensajes de Teams. Para eso hay que registrar una "aplicación" en el portal de Azure.
+Esta sección no es necesaria para la demostración del TFG, pero resume qué habría que cambiar si el sistema se desplegara en un entorno distinto.
 
-1. Entra en [portal.azure.com](https://portal.azure.com) con una cuenta de administrador.
-2. Ve a **Azure Active Directory → Registros de aplicaciones → Nueva registro**.
-3. Ponle un nombre (por ejemplo, `WhySoSerious`) y selecciona **Cuentas de este directorio organizativo únicamente**.
-4. En **URI de redireccionamiento**, selecciona `Web` e introduce:
-   ```
-   http://<tu-dominio>/auth/callback
-   ```
-   (en local: `http://localhost:8000/auth/callback`)
-5. Pulsa **Registrar**.
+### 4.1 Registro en Azure AD
 
-### 1.1 Anotar los identificadores
+Debe crearse un registro de aplicación en Azure AD y configurar el callback:
 
-Una vez creada la app, anota estos tres valores — los necesitarás más adelante:
+```text
+http://localhost:8000/auth/callback
+```
 
-- **Id. de directorio (inquilino)** → será tu `TENANT_ID`
-- **Id. de aplicación (cliente)** → será tu `CLIENT_ID`
+En un despliegue real, `localhost` tendría que sustituirse por el dominio correspondiente.
 
-### 1.2 Crear el secreto de cliente
+Los permisos delegados permiten el inicio de sesión de usuarios:
 
-1. En el menú de la app, ve a **Certificados y secretos → Nuevo secreto de cliente**.
-2. Ponle una descripción y elige una caducidad.
-3. Copia el **Valor** que aparece — será tu `CLIENT_SECRET`. Solo se muestra una vez.
-
-### 1.3 Asignar permisos de API
-
-El sistema necesita dos tipos de permisos:
-
-**Permisos delegados** (para el login de los usuarios del dashboard):
-
-| Permiso | Motivo |
+| Permiso | Finalidad |
 |---|---|
-| `User.Read` | Leer el perfil del usuario que inicia sesión |
-| `Chat.Read` | Leer los chats del usuario |
-| `ChatMessage.Read` | Leer los mensajes de esos chats |
+| `User.Read` | Leer el perfil del usuario autenticado |
+| `Chat.Read` | Acceder a chats autorizados para el usuario |
+| `ChatMessage.Read` | Leer mensajes autorizados |
 
-**Permisos de aplicación** (para el análisis nocturno automático, sin usuario):
+Los permisos de aplicación permiten la ingesta automática:
 
-| Permiso | Motivo |
+| Permiso | Finalidad |
 |---|---|
-| `User.Read.All` | Listar todos los usuarios de la organización |
-| `Chat.Read.All` | Leer chats de cualquier usuario |
-| `ChatMessage.Read.All` | Leer mensajes de cualquier chat |
+| `User.Read.All` | Listar usuarios de la organización |
+| `Chat.Read.All` | Leer chats organizativos autorizados |
+| `ChatMessage.Read.All` | Leer mensajes organizativos autorizados |
 
-Para añadirlos: **Permisos de API → Agregar un permiso → Microsoft Graph**.
+Los permisos de aplicación requieren consentimiento de administrador.
 
-> Los permisos de aplicación requieren que un administrador pulse **Conceder consentimiento de administrador** después de añadirlos. Sin este paso, el análisis nocturno no funcionará.
+### 4.2 Supabase
 
----
-
-## Paso 2 — Configurar Supabase
-
-Supabase es la base de datos donde el sistema guarda los resultados de los análisis.
-
-1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. Ve a **Settings → API** y anota:
-   - **Project URL** → será tu `SUPABASE_URL`
-   - **service_role key** → será tu `SUPABASE_KEY` (usa la `service_role`, no la `anon`)
-
-### 2.1 Crear las tablas
-
-En el editor SQL de Supabase (**SQL Editor → New query**), ejecuta lo siguiente:
+El sistema utiliza Supabase como acceso gestionado a PostgreSQL. Las tablas principales son:
 
 ```sql
--- Usuarios de la organización
 CREATE TABLE org_users (
-    user_email  TEXT PRIMARY KEY,
+    user_email TEXT PRIMARY KEY,
     display_name TEXT,
-    role        TEXT DEFAULT 'employee'
+    role TEXT DEFAULT 'employee'
 );
 
--- Equipos
 CREATE TABLE teams (
-    id   SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
 );
 
--- Asignación usuario-equipo
 CREATE TABLE user_teams (
     user_email TEXT REFERENCES org_users(user_email),
-    team_id    INTEGER REFERENCES teams(id),
+    team_id INTEGER REFERENCES teams(id),
     PRIMARY KEY (user_email, team_id)
 );
 
--- Proyectos
 CREATE TABLE projects (
-    id   SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
 );
 
--- Asignación usuario-proyecto
 CREATE TABLE project_members (
     user_email TEXT REFERENCES org_users(user_email),
     project_id INTEGER REFERENCES projects(id),
     PRIMARY KEY (user_email, project_id)
 );
 
--- Métricas de riesgo por mensaje
 CREATE TABLE risk_metrics (
-    id                  BIGSERIAL PRIMARY KEY,
-    message_id          TEXT UNIQUE NOT NULL,
-    user_email          TEXT,
-    message_timestamp   TIMESTAMPTZ,
-    project_id          INTEGER REFERENCES projects(id),
-    workspace_id        INTEGER,
-    estres_ansiedad     FLOAT DEFAULT 0,
-    enfado_irritacion   FLOAT DEFAULT 0,
+    id BIGSERIAL PRIMARY KEY,
+    message_id TEXT UNIQUE NOT NULL,
+    user_email TEXT,
+    message_timestamp TIMESTAMPTZ,
+    project_id INTEGER REFERENCES projects(id),
+    workspace_id INTEGER,
+    estres_ansiedad FLOAT DEFAULT 0,
+    enfado_irritacion FLOAT DEFAULT 0,
     sobrecarga_urgencia FLOAT DEFAULT 0,
-    cansancio_fatiga    FLOAT DEFAULT 0,
-    neutro              FLOAT DEFAULT 0
+    cansancio_fatiga FLOAT DEFAULT 0,
+    neutro FLOAT DEFAULT 0
 );
 
--- Configuración general de la organización
 CREATE TABLE org_settings (
-    key   TEXT PRIMARY KEY,
+    key TEXT PRIMARY KEY,
     value TEXT
 );
 ```
 
 ---
 
-## Paso 3 — Configurar el backend
+## 5. Ingesta automática
 
-### 3.1 Instalar dependencias
+El backend incluye una tarea programada con APScheduler. Esta tarea puede ejecutarse de forma periódica y también puede lanzarse manualmente desde el panel de administración.
 
-```bash
-cd ceu-whysoserious/backend
-python -m venv venv
-source venv/bin/activate        # En Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 3.2 Crear el fichero de configuración
-
-Crea un fichero llamado `.env` dentro de `ceu-whysoserious/backend/` con este contenido:
-
-```env
-# Azure AD
-TENANT_ID=<id de directorio anotado en el paso 1>
-CLIENT_ID=<id de aplicación anotado en el paso 1>
-CLIENT_SECRET=<secreto creado en el paso 1.2>
-REDIRECT_URI=http://<tu-dominio>/auth/callback
-
-# Supabase
-SUPABASE_URL=<url del proyecto de supabase>
-SUPABASE_KEY=<service_role key de supabase>
-
-# Sesiones (pon cualquier cadena larga y aleatoria)
-SESSION_SECRET_KEY=cambia_esto_por_una_clave_secreta_larga
-
-# URLs (ajusta a tu dominio en producción)
-FRONTEND_URL=http://localhost:5173
-APP_ORIGIN=http://localhost:8000
-```
-
-### 3.3 Arrancar el servidor
-
-```bash
-uvicorn main:app --reload
-# Disponible en http://localhost:8000
-```
-
----
-
-## Paso 4 — Configurar el frontend
-
-### 4.1 Instalar dependencias
-
-```bash
-cd ceu-whysoserious/frontend
-npm install
-```
-
-### 4.2 Apuntar al backend
-
-Si vas a desplegar en producción (no en local), edita `src/api/api.js` y cambia la primera línea:
-
-```js
-// Cambia esto:
-const BASE_URL = "http://localhost:8000";
-
-// Por la URL real de tu backend:
-const BASE_URL = "https://tu-dominio.com";
-```
-
-### 4.3 Arrancar el frontend
-
-```bash
-npm run dev
-# Disponible en http://localhost:5173
-```
-
----
-
-## Paso 5 — Primera configuración en el dashboard
-
-1. Abre el dashboard en el navegador y haz login con una cuenta de administrador de tu organización.
-2. Ve a la sección **Administración** y crea los equipos y proyectos de tu organización.
-3. Asigna usuarios a equipos y proyectos.
-4. Asigna roles a los usuarios:
-   - `admin` — acceso total, puede gestionar equipos y lanzar análisis
-   - `manager` — puede ver el dashboard de riesgo de su equipo
-   - `employee` — sin acceso al dashboard
-
-### 5.1 Lanzar el primer análisis
-
-El análisis nocturno se ejecuta automáticamente cada día a las 02:00. Para lanzarlo manualmente la primera vez, ve a **Administración → Lanzar análisis ahora**.
-
-La primera ejecución analizará las últimas 25 horas de mensajes. A partir de ahí, cada ejecución retoma desde donde dejó la anterior.
-
----
-
-## Mantenimiento
-
-### El análisis no se ejecutó
-
-Si el servidor estuvo caído durante la hora programada, no hay problema: la próxima ejecución detecta automáticamente que hay mensajes sin analizar y los recupera desde la última ejecución correcta.
-
-### Añadir nuevos usuarios
-
-Los usuarios nuevos se añaden desde el panel de **Administración** del dashboard. Es necesario asignarles un rol para que puedan acceder.
-
-### El secreto de Azure caduca
-
-Los secretos de cliente de Azure tienen fecha de caducidad. Cuando caduque, crea uno nuevo en el portal de Azure y actualiza `CLIENT_SECRET` en el fichero `.env`. Reinicia el backend para que lo cargue.
-
----
-
-## Requisitos de hardware
-
-El sistema incluye un modelo de inteligencia artificial (transformer) que se carga en memoria al arrancar el backend. Esto tiene un impacto directo en los requisitos del servidor:
-
-| Recurso | Mínimo recomendado |
-|---|---|
-| RAM | 6 GB libres |
-| CPU | 4 núcleos |
-| Almacenamiento | 5 GB (modelo ~3 GB + dependencias) |
-| Python | 3.9 — versiones superiores pueden tener incompatibilidades con PyTorch |
-
-> Si el servidor no tiene suficiente RAM, el backend arrancará pero el análisis de mensajes fallará silenciosamente. En los logs aparecerá un mensaje de tipo `AVISO: Modelo final no cargado`.
-
----
-
-## Adaptación para tu organización
-
-### Filtro de usuarios
-
-Por defecto el sistema solo analiza usuarios cuyo email contiene `.tfg@`. Este filtro existe por motivos del proyecto académico original y **debe cambiarse** antes de usar el sistema en una organización real.
-
-Edita `backend/scheduler_tasks.py` y modifica esta línea:
+En `backend/scheduler_tasks.py` se mantiene un filtro propio del entorno académico:
 
 ```python
-# Línea original (solo analiza usuarios .tfg):
 TFG_FILTER = ".tfg@"
-
-# Cámbiala por un fragmento del dominio de tu organización:
-TFG_FILTER = "@tuempresa.com"
 ```
 
-Si quieres analizar a todos los usuarios sin filtro, cambia también la línea que lo aplica:
-
-```python
-# Antes (con filtro):
-tfg_users = [u for u in raw_users if TFG_FILTER in (u.get("userPrincipalName", "").lower())]
-
-# Después (sin filtro):
-tfg_users = raw_users
-```
+Este filtro limita la ingesta a los usuarios preparados para la demostración. En una implantación real tendría que cambiarse por el dominio de la organización o eliminarse si se desea analizar a todos los usuarios autorizados.
 
 ---
 
-## Verificación — comprobar que todo funciona
+## 6. Solución de problemas
 
-### El backend arranca correctamente
-
-Abre `http://localhost:8000/docs` en el navegador. Debería aparecer la documentación de la API. Si no carga, revisa los logs del terminal.
-
-### El modelo NLP se cargó
-
-En los logs del backend al arrancar deberías ver:
-```
-Modelo de Emociones cargado correctamente.
-```
-Si en cambio ves `AVISO: Modelo final no cargado`, el servidor no tiene suficiente RAM o la carpeta `models/final_teams/` está vacía o mal ubicada.
-
-### La conexión con Azure funciona
-
-Entra al dashboard y haz login. Si Azure devuelve un error `redirect_uri_mismatch`, el valor de `REDIRECT_URI` en el `.env` no coincide con el configurado en el portal de Azure — deben ser idénticos.
-
-### La conexión con Supabase funciona
-
-Ve a **Administración** en el dashboard. Si ves un error de conexión, comprueba que `SUPABASE_URL` y `SUPABASE_KEY` son correctos y que las tablas están creadas (paso 2.1).
-
-### El análisis nocturno funciona
-
-Lanza un análisis manual desde **Administración → Lanzar análisis ahora** y comprueba los logs. Deberías ver algo como:
-```
-Procesando X usuarios
-Análisis completado en XX.Xs
-Resumen: X analizados, X guardados, 0 errores.
-```
-Si el contador de usuarios es 0, revisa el filtro de usuarios descrito en la sección anterior.
-
----
-
-## Resumen de variables de entorno
-
-| Variable | Obligatoria | Descripción |
+| Síntoma | Posible causa | Revisión recomendada |
 |---|---|---|
-| `TENANT_ID` | Sí | ID del directorio de Azure AD |
-| `CLIENT_ID` | Sí | ID de la app registrada en Azure |
-| `CLIENT_SECRET` | Sí | Secreto de la app de Azure |
-| `REDIRECT_URI` | Sí | URL de callback OAuth (`/auth/callback`) |
-| `SUPABASE_URL` | Sí | URL del proyecto Supabase |
-| `SUPABASE_KEY` | Sí | Service role key de Supabase |
-| `SESSION_SECRET_KEY` | Sí | Clave para firmar las cookies de sesión |
-| `FRONTEND_URL` | No | URL del frontend (por defecto: `http://localhost:5173`) |
-| `APP_ORIGIN` | No | URL del backend (por defecto: `http://localhost:8000`) |
+| `docker: command not found` | Docker no está instalado o no está arrancado | Abrir Docker Desktop |
+| `failed to read dockerfile` | El comando se ha ejecutado fuera de `ceu-whysoserious/` | Entrar en la raíz del proyecto |
+| El frontend no carga | Los contenedores todavía están arrancando | Esperar a `Application startup complete.` |
+| Falla el login con Microsoft | `.env` incompleto o callback incorrecto | Revisar Azure y `REDIRECT_URI` |
+| `/health` muestra `"model": "loading"` | El modelo no se ha cargado | Revisar `backend/models/final_teams_backup_0806/` |
+| El análisis procesa 0 usuarios | El filtro `.tfg@` no coincide | Revisar `TFG_FILTER` |
+| Error de Supabase | Credenciales o tablas incorrectas | Revisar `SUPABASE_URL`, `SUPABASE_KEY` y esquema |
+
+---
+
+## 7. Notas sobre la entrega
+
+La carpeta `legacy/` conserva material histórico, prototipos y resultados de fases anteriores. Se mantiene para no perder trazabilidad, pero no forma parte del flujo activo del sistema.
+
+Los ficheros `.dockerignore` excluyen del build los elementos que no son necesarios para ejecutar la aplicación, como logs, resultados antiguos, caches, tests, material legacy y modelos que no son el activo. El modelo utilizado por el backend es `backend/models/final_teams_backup_0806/`.
+
+Por diseño, el sistema no persiste el texto original de los mensajes. La base de datos conserva únicamente métricas numéricas y metadatos necesarios para la agregación y consulta posterior.

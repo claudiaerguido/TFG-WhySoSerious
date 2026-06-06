@@ -9,9 +9,7 @@ from dotenv import load_dotenv
 from auth import html_to_text
 
 
-# ==========================================
-# 1. CONFIGURACIÓN
-# ==========================================
+# --- Configuración ---
 
 load_dotenv()
 
@@ -38,9 +36,7 @@ SCOPES = ["User.Read", "Chat.Read", "ChatMessage.Read"]
 TIMEOUT = 30
 
 
-# ==========================================
-# 2. AUTENTICACIÓN OAuth con PKCE
-# ==========================================
+# --- Autenticación OAuth con PKCE ---
 
 def _generate_pkce_pair():
     """
@@ -125,13 +121,7 @@ def exchange_code_for_token(code: str, code_verifier: str = None) -> dict:
     return resp.json()
 
 
-# ==========================================
-# 3. HELPERS
-# ==========================================
-
-# ==========================================
-# 4. LLAMADAS A GRAPH API
-# ==========================================
+# --- Llamadas a Graph API ---
 
 def get_me_profile(token: str) -> dict:
     """
@@ -144,7 +134,7 @@ def get_me_profile(token: str) -> dict:
     resp = requests.get(url, headers=headers, timeout=TIMEOUT)
 
     if not resp.ok:
-        print(f"⚠️ Error obteniendo perfil: {resp.status_code} {resp.text}")
+        print(f"Error obteniendo perfil: {resp.status_code} {resp.text}")
         return {}
 
     return resp.json()
@@ -165,7 +155,7 @@ def list_my_chats(token: str) -> list:
         resp = requests.get(url, headers=headers, timeout=TIMEOUT)
 
         if not resp.ok:
-            print(f"⚠️ Error obteniendo chats: {resp.status_code} {resp.text}")
+            print(f"Error obteniendo chats: {resp.status_code} {resp.text}")
             break
 
         data = resp.json()
@@ -197,7 +187,7 @@ def list_chat_messages(token: str, chat_id: str, top: int = 50) -> list:
         resp = requests.get(url, headers=headers, timeout=TIMEOUT)
 
         if not resp.ok:
-            print(f"⚠️ Error obteniendo mensajes del chat {chat_id}: {resp.status_code} {resp.text}")
+            print(f"Error obteniendo mensajes del chat {chat_id}: {resp.status_code} {resp.text}")
             break
 
         data = resp.json()

@@ -1,13 +1,6 @@
-# Tipo: Validación
-# Requisitos cubiertos: RF14
-# Objetivo: Verificar que el sistema permite filtrar y visualizar la información por rango de fechas.
-"""
-7. Test de validación de filtro por fechas (test_val_custom_date.py)
-
-Qué valida: que el sistema procesa  y aplica en la consulta SQL base, 
-los parámetros `start_date` y `end_date` correspondientes a la opción "Personalizado".
-"""
-import pytest
+# Tipo: Validación | Requisitos: RF14
+# Objetivo: Comprobar que get_project_tactical_risk propaga start_date y end_date
+# correctamente a la consulta de Supabase cuando el usuario elige el filtro "Personalizado".
 from unittest.mock import patch, MagicMock
 from backend.services.risk_service import get_project_tactical_risk
 
@@ -17,7 +10,7 @@ def test_validation_custom_date_range(mock_members, mock_db_getter):
     """
     REQ: RF14. Validación del uso de rangos temporales en la consulta analítica.
     DEFINICIÓN: El usuario puede filtrar la información por un periodo personalizado para observar la evolución o estado en fechas concretas.
-    VALIDACIÓN: Se comprueba que al llamar al servicio con fechas explícitas, la consulta resultante al ORM (Supabase) inyecta correctamente los filtros `gte` y `lte` sobre el campo `message_timestamp`.
+    VALIDACIÓN: Con fechas explícitas, la consulta a Supabase aplica los filtros gte y lte sobre message_timestamp con los valores correctos.
     """
     mock_supabase = MagicMock()
     mock_db_getter.return_value = mock_supabase
@@ -45,11 +38,11 @@ def test_validation_custom_date_range(mock_members, mock_db_getter):
     mock_eq.execute.return_value = mock_exe
     mock_exe.data = [] 
     
-    # Ejecutamos el servicio pasándole fechas explícitas (Priorizarán sobre el days natural)
+    # Las fechas explícitas tienen prioridad sobre el parámetro days
     res = get_project_tactical_risk(project_id=1, days=0, start_date="2026-01-01", end_date="2026-03-31")
     
     assert res["status"] == "ok"
     
-    # Comprobar aserción de que construimos el SQL final mediante ORM con el GTE y LTE de Supabase
+    # Verificar que la cadena ORM lleva gte y lte con los valores correctos
     mock_in.gte.assert_called_with("message_timestamp", "2026-01-01")
     mock_gte.lte.assert_called_with("message_timestamp", "2026-03-31T23:59:59.999Z")

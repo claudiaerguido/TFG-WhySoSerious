@@ -1,11 +1,11 @@
 import json
 import os
 import pandas as pd
-from typing import Dict, List
+from typing import Dict
 
 # ── Etiquetas y Configuración ──────────────────────────────────────────────
 
-# Listado completo de dimensiones emocionales analizadas por el modelo NLP
+# Dimensiones emocionales que el modelo NLP clasifica en cada mensaje
 TARGET_LABELS = [
     "ESTRES_ANSIEDAD",
     "ENFADO_IRRITACION",
@@ -57,7 +57,7 @@ def _normalize_weights(weights: Dict[str, float]) -> Dict[str, float]:
     if denom == 0: return {k: 0.0 for k in weights}
     return {k: v / denom for k, v in weights.items()}
 
-# Ruta al archivo de umbrales calibrados
+# Umbrales de decisión calibrados para cada etiqueta (ver thresholds.json)
 THRESHOLDS_PATH = os.path.join(os.path.dirname(__file__), "../thresholds.json")
 
 def _load_calibrated_thresholds() -> Dict[str, float]:
@@ -67,7 +67,7 @@ def _load_calibrated_thresholds() -> Dict[str, float]:
             with open(THRESHOLDS_PATH, 'r') as f:
                 return json.load(f)
     except Exception as e:
-        print(f"⚠️ Error cargando umbrales en risk_model: {e}")
+        print(f"Error cargando umbrales en risk_model: {e}")
     
     # Fallback: Umbral neutro conservador
     return {l: 0.35 for l in TARGET_LABELS}
@@ -89,8 +89,7 @@ def compute_pearson_msg_risk(df: pd.DataFrame) -> pd.Series:
     neg_cols = [DB_COLS[l] for l in NEGATIVE_LABELS if DB_COLS[l] in df.columns]
     df = df.copy()
 
-    # APLICAR CALIBRACIÓN (Opción A): Consistencia con el núcleo operativo del model NLP
-    # Si la probabilidad < umbral del modelo, no contribuye al riesgo táctico.
+    # Aplicar calibración: si la probabilidad no supera el umbral del modelo, no cuenta para el riesgo.
     thresholds = _load_calibrated_thresholds()
     for label in NEGATIVE_LABELS:
         col = DB_COLS[label]
@@ -106,7 +105,6 @@ def compute_pearson_msg_risk(df: pd.DataFrame) -> pd.Series:
     for label in NEGATIVE_LABELS:
         col = DB_COLS[label]
         if col in df.columns:
-            # Determinamos la influencia de cada pilar operativo en el riesgo total
             c = _safe_corr(df[col], df["risk_base"])
             weights[label] = max(c, 0.0)
         else:

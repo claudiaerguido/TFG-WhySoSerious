@@ -1,8 +1,6 @@
-# Tipo: Validación
-# Requisitos cubiertos: RF07, RF18, RNF03, RNF04, RNF06
-# Objetivo: Verificar el cumplimiento de las políticas de privacidad, minimización de datos y comportamiento seguro ante ausencia de muestras.
-
-import pytest
+# Tipo: Validación | Requisitos: RF07, RF18, RNF03, RNF04, RNF06
+# Objetivo: Comprobar que el sistema nunca persiste texto original de mensajes, solo
+# puntuaciones numéricas, y que maneja correctamente la ausencia de datos.
 import pandas as pd
 from unittest.mock import patch, MagicMock
 from backend.db_repository import save_risk_metrics, fetch_metrics_for_users
@@ -28,7 +26,6 @@ def test_privacy_minimization_persistence():
     for key in prohibited_keys:
         assert key not in data_persisted, f"ERROR DE PRIVACIDAD: Se intentó persistir el campo sensible '{key}'"
     
-    print("✅ Minimización confirmada: No se detectan campos de texto original en el guardado.")
 
 def test_privacy_aggregation_extraction():
     """

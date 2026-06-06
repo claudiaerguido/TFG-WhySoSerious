@@ -1,10 +1,6 @@
 import nlp_model
 
 def analyze_message(text):
-    """
-    Analiza un mensaje usando el modelo NLP cargado.
-    Devuelve None si el texto es muy corto o irrelevante.
-    """
     if not text or len(text.strip()) < 4:
         return None
         

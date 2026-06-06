@@ -70,6 +70,20 @@ def _is_operational_member(member: Dict[str, Any]) -> bool:
     return member.get("role", "employee") == "employee"
 
 
+def _compute_per_user_risks(df: pd.DataFrame) -> Dict[str, Optional[float]]:
+    """
+    Calcula el riesgo medio (escala 0..1) por usuario a partir de un
+    DataFrame con mensajes de múltiples usuarios. Evita N queries
+    procesando todos los usuarios en una sola pasada de pandas.
+    """
+    if df.empty:
+        return {}
+    result: Dict[str, Optional[float]] = {}
+    for email, group in df.groupby("user_email"):
+        msg_risks = compute_pearson_msg_risk(group.reset_index(drop=True))
+        result[email] = float(msg_risks.mean()) if not msg_risks.empty else None
+    return result
+
 # ── Modelo de 4 niveles ─────────────────────────────────────────────────────
 
 def get_employee_global_risk(user_email: str, days: int = 7, start_date: str = None, end_date: str = None) -> Optional[float]:
@@ -413,5 +427,5 @@ def get_all_teams_and_projects_with_members() -> Dict[str, List[Dict[str, Any]]]
         return {"teams": teams, "projects": projects}
 
     except Exception as e:
-        print(f"⚠️ get_all_teams_and_projects_with_members error: {e}")
+        print(f"get_all_teams_and_projects_with_members error: {e}")
         return {"teams": [], "projects": []}

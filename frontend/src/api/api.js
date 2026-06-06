@@ -98,7 +98,7 @@ export async function fetchTeamMemberBreakdown(userEmail, days = 7, start = null
     return res.json();
 }
 
-// ── Gestión de Proyectos (US-20) ───────────────────────────────
+// ── Gestión de Proyectos ───────────────────────────────────────
 export async function fetchProjectsCatalog() {
     const res = await fetch(`${BASE_URL}/api/projects/catalog`, { credentials: "include" });
     if (!res.ok) throw new Error("Error al obtener catálogo de proyectos");
@@ -125,7 +125,7 @@ export async function removeProjectMember(userEmail, projectId) {
     return res.json();
 }
 
-// ── Empleados (US-36) ──────────────────────────────────────────
+// ── Empleados ──────────────────────────────────────────────────
 export async function fetchEmployeeProfile(userEmail, days = 7, start = null, end = null) {
     const res = await fetch(
         `${BASE_URL}/api/employees/profile?user_email=${encodeURIComponent(userEmail)}&${getDateQuery(days, start, end)}`,

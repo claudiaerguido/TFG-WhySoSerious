@@ -33,16 +33,10 @@ Este documento detalla los componentes clave del sistema de detección de emocio
 *   **Componentes Clave:**
     *   **`baseline_predict`**: Ejecuta el modelo original de Hugging Face (estrellas) mediante `pipeline` para comparativa.
     *   **`final_predict`**: Ejecuta nuestro modelo de emociones final.
-    *   **Lógica Híbrida**:
-        *   **Temperature Scaling**: Suaviza las probabilidades extremas.
-        *   **Umbrales Dinámicos**: Aplica los cortes definidos en el JSON.
-        *   **Fallback a Neutro**: Si ninguna emoción supera su umbral, devuelve "Neutro (Por defecto)" para evitar "alucinaciones".
-        *   **Neutral Gating**: Si la probabilidad de Neutro es muy alta (>0.75), suprime detecciones de emociones débiles (<0.45) para reducir ruido.
-
-### `thresholds_phaseB.json`
-*   **Función:** Archivo de configuración "en caliente".
-*   **Qué contiene:** Los valores límite para cada emoción (ej: `SOBRECARGA: 0.35`, `ESTRES: 0.25`).
-*   **Importancia:** Permite ajustar la sensibilidad ("agresividad") del sistema en producción sin tener que volver a entrenar ni tocar código Python.
+    *   **Lógica de Inferencia**:
+        *   **Clasificación multilabel**: calcula una probabilidad independiente para cada etiqueta emocional.
+        *   **Umbrales por etiqueta**: conserva solo las emociones que superan su corte de confianza.
+        *   **Fallback a Neutro**: si ninguna señal del núcleo operativo supera el umbral, devuelve `NEUTRO`.
 
 ---
 

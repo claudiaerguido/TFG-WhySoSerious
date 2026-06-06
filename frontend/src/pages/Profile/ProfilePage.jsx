@@ -252,10 +252,6 @@ export default function ProfilePage() {
                                 <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 2 }}>
                                     Tu cuenta está vinculada a Microsoft Graph API. No almacenamos tus credenciales ni mensajes privados. La monitorización es agregada y anónima.
                                 </Typography>
-                                <Divider sx={{ borderStyle: 'dashed', mb: 1.5 }} />
-                                <Typography variant="caption" color="primary" sx={{ fontWeight: 700, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
-                                    Ver política de privacidad →
-                                </Typography>
                             </Box>
                         </Grid>
                     </Grid>

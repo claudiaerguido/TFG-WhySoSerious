@@ -6,10 +6,8 @@ from auth import html_to_text
 from dotenv import load_dotenv
  
  
-# ==========================================
-# 1. CONFIGURACIÓN
-# ==========================================
- 
+# --- Configuración ---
+
 load_dotenv()
  
 TENANT_ID = os.getenv("TENANT_ID")
@@ -35,9 +33,7 @@ else:
 USER_CACHE: Dict[str, str] = {}
  
  
-# ==========================================
-# 2. HELPERS INTERNOS
-# ==========================================
+# --- Helpers internos ---
  
 def _validate_graph_config() -> None:
     """Valida que la configuración mínima de Graph esté disponible."""
@@ -57,9 +53,7 @@ def _validate_graph_config() -> None:
  
  
  
-# ==========================================
-# 3. AUTENTICACIÓN DE APLICACIÓN
-# ==========================================
+# --- Autenticación de aplicación ---
  
 def get_app_token() -> str:
     """
@@ -81,9 +75,7 @@ def get_app_token() -> str:
     return response.json()["access_token"]
  
  
-# ==========================================
-# 4. WRAPPER GENÉRICO DE GRAPH
-# ==========================================
+# --- Wrapper genérico de Graph ---
  
 def graph_get(
     path: str,
@@ -117,9 +109,7 @@ def graph_get(
     return response.json()
  
  
-# ==========================================
-# 5. RESOLUCIÓN DE USUARIOS
-# ==========================================
+# --- Resolución de usuarios ---
  
 def get_user_email_from_id(user_id: str) -> Optional[str]:
     """
@@ -142,9 +132,7 @@ def get_user_email_from_id(user_id: str) -> Optional[str]:
     return None
  
  
-# ==========================================
-# 6. USUARIOS → CHATS → MENSAJES
-# ==========================================
+# --- Usuarios → Chats → Mensajes ---
  
 def list_users(top: int = 999, token: Optional[str] = None) -> List[Dict]:
     """
@@ -222,7 +210,7 @@ def list_chat_members(chat_id: str) -> List[str]:
         return emails
  
     except Exception as e:
-        print(f"⚠️ Error obteniendo miembros de chat {chat_id}: {e}")
+        print(f"Error obteniendo miembros de chat {chat_id}: {e}")
         return []
  
  
@@ -246,7 +234,7 @@ def list_chat_messages(chat_id: str, top: int = 50, since: Optional[str] = None,
     while url:
         resp = requests.get(url, headers=headers, timeout=TIMEOUT)
         if not resp.ok:
-            print(f"⚠️ Error Graph en {url}: {resp.status_code} {resp.text}")
+            print(f"Error Graph en {url}: {resp.status_code} {resp.text}")
             break
 
         data = resp.json()
@@ -271,7 +259,7 @@ def list_chat_messages(chat_id: str, top: int = 50, since: Optional[str] = None,
             sender_name = user_info.get("displayName") or "Unknown"
  
             if not sender_email:
-                print(f"⚠️ No se pudo resolver email para '{sender_name}' (ID: {user_info.get('id')})")
+                print(f"No se pudo resolver email para '{sender_name}' (ID: {user_info.get('id')})")
  
             created = message.get("createdDateTime", "")
             if since and created and created < since:
@@ -294,13 +282,11 @@ def list_chat_messages(chat_id: str, top: int = 50, since: Optional[str] = None,
     return messages_out
  
  
-# ==========================================
-# 7. UTILIDAD MANUAL
-# ==========================================
+# --- Utilidad manual ---
  
 def collect_all_messages(limit_per_chat: int = 20, user_top: int = 50) -> List[Dict]:
     """
-    Recorre la organización y devuelve mensajes listos para análisis de burnout.
+    Recorre la organización y devuelve mensajes listos para análisis de riesgo psicosocial.
  
     CAMBIO RESPECTO A LA VERSIÓN ANTERIOR:
     - Se añade 'chats_procesados' para evitar mensajes duplicados.
@@ -345,7 +331,6 @@ def collect_all_messages(limit_per_chat: int = 20, user_top: int = 50) -> List[D
             if chat_id in chats_procesados:
                 continue
  
-            # Marcamos el chat como procesado antes de entrar
             chats_procesados.add(chat_id)
  
             messages = list_chat_messages(chat_id, top=limit_per_chat, token=token)

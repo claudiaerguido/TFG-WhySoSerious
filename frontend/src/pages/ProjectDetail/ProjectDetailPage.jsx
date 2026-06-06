@@ -291,10 +291,6 @@ export default function ProjectDetailPage() {
   const riskData = riskQuery.data;
   const trendData = trendQuery.data?.trend ?? [];
 
-  if (import.meta.env.DEV && riskData) {
-    console.log(`[WorkspaceDetail ${itemId}] payload:`, riskData);
-  }
-
   // 403 — acceso denegado
   const is403 = riskQuery.error?.status === 403;
   if (is403) {
@@ -454,8 +450,6 @@ export default function ProjectDetailPage() {
             </CardContent>
           </Card>
         </Box>
-
-
 
         {/* BLOQUE: Detalle por Miembro */}
         <Box className="member-list-section">

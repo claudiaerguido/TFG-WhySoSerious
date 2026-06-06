@@ -1,13 +1,6 @@
-# Tipo: Validación
-# Requisitos cubiertos: RF08, RF12 (Parcial)
-# Objetivo: Verificar el desglose por miembro y proyecto dentro de la supervisión analítica autorizada.
-"""
-6. Test de desglose por miembro (test_val_member_breakdown.py)
-
-    Qué valida: que el sistema ofrece trazabilidad individual del riesgo por proyecto en contextos autorizados de supervisión.
-    Explicación: este test comprueba que, al analizar un miembro concreto, el sistema puede desglosar su riesgo entre los distintos proyectos en los que participa, evitando mezclas incorrectas entre contextos.
-"""
-import pytest
+# Tipo: Validación | Requisitos: RF08, RF12 (Parcial)
+# Objetivo: Comprobar que get_member_projects_breakdown devuelve el riesgo de un empleado
+# desglosado por proyecto, sin mezclar datos entre proyectos distintos.
 from unittest.mock import patch, MagicMock
 from backend.services.risk_service import get_member_projects_breakdown
 
@@ -21,7 +14,7 @@ def test_validation_member_breakdown(mock_db, mock_projects, mock_emp_proj_risk)
     """
     REQ: RF08 y RF12 (Parcial).
     DEFINICIÓN: El sistema debe permitir a perfiles de gestión autorizados consultar el detalle individual y desglosar el riesgo de un empleado por proyecto.
-    VALIDACIÓN: Verifica que el servicio de desglose consulta los proyectos del usuario y calcula el riesgo individual para cada uno, devolviendo una estructura que separa el impacto por contexto táctico.
+    VALIDACIÓN: El servicio consulta los proyectos del usuario, calcula el riesgo en cada uno por separado y devuelve una lista con el nombre y el riesgo de cada proyecto.
     """
     breakdown = get_member_projects_breakdown("emp@tfg.com")
     

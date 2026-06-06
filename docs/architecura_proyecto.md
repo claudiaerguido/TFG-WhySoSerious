@@ -24,14 +24,10 @@ backend/
   │   ├── risk_service.py    # Cálculo de métricas, tendencias y desgloses
   │   └── permissions_service.py # Control de acceso y visibilidad por rol
   │
-  ├── scripts/               # Herramientas auxiliares y mantenimiento
-  │   ├── debug/             # Diagnóstico de esquema y equipos
-  │   ├── migration/         # Scripts de transferencia de datos
-  │   ├── maintenance/       # Backups y limpieza de registros
+  ├── scripts/               # Herramientas auxiliares
   │   └── training/          # Entrenamiento y evaluación de modelos NLP
   │
-  ├── legacy/                # Archivo de componentes obsoletos (db_supabase.py, legacy_service.py)
-  ├── logs/                  # Almacenamiento centralizado de trazas (.log)
+  ├── logs/                  # Directorio reservado para trazas locales
   └── tests/                 # Pruebas unitarias e integración
 ```
 

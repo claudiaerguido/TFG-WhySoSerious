@@ -7,13 +7,9 @@ def find_best_project(chat_members: list, all_projects: list) -> int:
     """
     Identifica el proyecto al que pertenece un chat basándose en sus miembros.
     
-    LÓGICA DE CLASIFICACIÓN (TFG):
-    1. Obtenemos los participantes del chat actual.
-    2. Comparamos con todos los proyectos registrados en la base de datos.
-    3. Si TODOS los participantes del chat forman parte de un proyecto específico
-       (es decir, el chat es un subconjunto del grupo del proyecto), 
-       asumimos que la conversación pertenece a ese contexto táctico.
-    4. Si no hay coincidencia, se clasifica como 'Global' (None).
+    Si todos los miembros del chat están en un proyecto, asumimos que la
+    conversación pertenece a ese contexto táctico. Si no hay coincidencia
+    total, el mensaje se clasifica como Global (project_id = None).
     """
     if not chat_members:
         return None
@@ -46,13 +42,13 @@ def run_nightly_analysis():
     from services.risk_service import get_all_teams_and_projects_with_members
 
     start_time = datetime.datetime.now()
-    print(f"🌙 Iniciando análisis nocturno [{start_time}]")
+    print(f"Iniciando análisis nocturno [{start_time}]")
     
     stats = {"users": 0, "chats": 0, "messages_analyzed": 0, "saved": 0, "errors": 0}
     
     supabase = get_supabase_client()
     if not supabase:
-        print("❌ Error: No se pudo conectar con Supabase")
+        print("Error: No se pudo conectar con Supabase")
         return
 
     # 1. Cargar proyectos para el mapeo
@@ -62,7 +58,7 @@ def run_nightly_analysis():
         raw_data = get_all_teams_and_projects_with_members()
         all_projects = raw_data.get("projects", [])
     except Exception as e:
-        print(f"❌ Error cargando proyectos: {e}")
+        print(f"Error cargando proyectos: {e}")
         return
 
     # 2. Obtener y filtrar usuarios .tfg
@@ -78,10 +74,10 @@ def run_nightly_analysis():
         tfg_users = [u for u in raw_users if TFG_FILTER in (u.get("userPrincipalName", "").lower())]
         stats["users"] = len(tfg_users)
     except Exception as e:
-        print(f"❌ Error obteniendo usuarios: {e}")
+        print(f"Error obteniendo usuarios: {e}")
         return
 
-    print(f"👥 Procesando {stats['users']} usuarios (.tfg)")
+    print(f"Procesando {stats['users']} usuarios (.tfg)")
 
     # 3. Escaneo de chats y análisis de mensajes
     for user in tfg_users:
@@ -94,7 +90,7 @@ def run_nightly_analysis():
         try:
             chats = list_user_chats(user_id)
         except Exception as e:
-            print(f"⚠️ Error leyendo chats de {user_email}: {e}")
+            print(f"Error leyendo chats de {user_email}: {e}")
             stats["errors"] += 1
             continue
 
@@ -135,16 +131,16 @@ def run_nightly_analysis():
                             )
                             stats["saved"] += 1
                     except Exception as e:
-                        print(f"⚠️ Error analizando/guardando mensaje {msg_id}: {e}")
+                        print(f"Error analizando/guardando mensaje {msg_id}: {e}")
                         stats["errors"] += 1
 
             except Exception as e:
-                print(f"⚠️ Error procesando chat {chat_id} de {user_email}: {e}")
+                print(f"Error procesando chat {chat_id} de {user_email}: {e}")
                 stats["errors"] += 1
 
     duration = datetime.datetime.now() - start_time
-    print(f"✅ Análisis completado en {duration.total_seconds():.1f}s")
-    print(f"📊 Resumen: {stats['messages_analyzed']} analizados, {stats['saved']} guardados, {stats['errors']} errores.")
+    print(f"Análisis completado en {duration.total_seconds():.1f}s")
+    print(f"Resumen: {stats['messages_analyzed']} analizados, {stats['saved']} guardados, {stats['errors']} errores.")
 
 if __name__ == "__main__":
     run_nightly_analysis()
