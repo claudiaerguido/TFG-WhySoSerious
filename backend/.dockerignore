@@ -13,6 +13,7 @@ scripts/
 docs/*.pdf
 
 models/*
+models/final_teams_backup_0806/
 !models/final_teams/
 !models/final_teams/model.safetensors
 !models/final_teams/tokenizer_config.json

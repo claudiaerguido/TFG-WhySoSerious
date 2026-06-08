@@ -116,8 +116,9 @@ export default function DashboardPage() {
     const allLoaded = riskQueries.length > 0 && riskQueries.every(q => !q.isLoading);
 
     const workspacesWithRisk = allWorkspaces.map((ws, i) => {
-        const riskData = riskQueries[i].data;
-        const isLoading = riskQueries[i].isLoading;
+        const riskQuery = riskQueries[i];
+        const riskData = riskQuery?.data;
+        const isLoading = riskQuery?.isLoading ?? true;
         const pct = riskData?.risk_score_percentage;
         const level = riskData?.risk_level ?? "Verde";
         return { ...ws, riskData, isLoading, pct, level };
@@ -207,12 +208,11 @@ export default function DashboardPage() {
                     </Box>
 
                     <TableContainer sx={{ border: '1px solid rgba(0,0,0,0.04)', borderRadius: 2 }}>
-                        <Table sx={{ minWidth: { xs: 500, sm: 650 } }}>
+                        <Table sx={{ minWidth: { xs: 460, sm: 600 } }}>
                             <TableHead sx={{ bgcolor: '#f8fafc' }}>
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Nombre</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Tipo</TableCell>
-                                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Muestra</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Puntuación de Riesgo</TableCell>
                                     <TableCell sx={{ fontWeight: 700, color: 'text.secondary', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>Nivel</TableCell>
                                 </TableRow>
@@ -220,7 +220,7 @@ export default function DashboardPage() {
                             <TableBody>
                                 {workspacesWithRisk.length === 0 && !isLoadingWs ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                                        <TableCell colSpan={4} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                                             No tienes equipos ni proyectos asignados que monitorizar.
                                         </TableCell>
                                     </TableRow>
@@ -237,11 +237,6 @@ export default function DashboardPage() {
                                         <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
                                             <Typography variant="body2" color="text.secondary" fontWeight={500}>
                                                 {ws.type === "team" ? "Equipo" : "Proyecto"}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
-                                            <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                                {ws.riskData?.members?.length ?? 0} miembros
                                             </Typography>
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>

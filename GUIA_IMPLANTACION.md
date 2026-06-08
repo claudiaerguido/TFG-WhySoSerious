@@ -14,9 +14,9 @@ Antes de arrancar el proyecto es necesario contar con:
 
 | Requisito | Motivo |
 |---|---|
-| Docker Desktop | Construir y ejecutar los contenedores |
+| Docker Desktop | Descargar y ejecutar los contenedores |
 | `backend/.env` | Cargar credenciales y configuración del entorno |
-| Conexión a Internet | Construcción inicial y autenticación con Microsoft |
+| Conexión a Internet | Descarga inicial de imágenes y autenticación con Microsoft |
 
 Puede comprobarse que Docker está disponible con:
 
@@ -35,13 +35,13 @@ ceu-whysoserious/
     └── .env
 ```
 
-El modelo utilizado por el código se encuentra en:
+El modelo utilizado por el backend se incluye dentro de la imagen Docker publicada:
 
 ```text
-ceu-whysoserious/backend/models/final_teams_backup_0806/
+claudiaea/whysoserious-backend:latest
 ```
 
-Para la inferencia son necesarios los ficheros del modelo y del tokenizer, entre ellos `model.safetensors`, `config.json`, `tokenizer.json`, `tokenizer_config.json`, `special_tokens_map.json`, `training_args.bin` y `vocab.txt`.
+Por tanto, para la evaluación no es necesario copiar la carpeta del modelo, instalar Git LFS ni descargar pesos desde Hugging Face durante el arranque. Si se ejecuta el backend manualmente fuera de Docker, entonces sí debe existir una copia local del modelo en `backend/models/final_teams/`.
 
 ### 1.3 Arranque de la aplicación
 
@@ -49,10 +49,10 @@ Desde la raíz del repositorio:
 
 ```bash
 cd ceu-whysoserious
-docker compose up --build
+docker compose up
 ```
 
-La primera ejecución puede tardar varios minutos. Docker instala las dependencias, construye el frontend y prepara el backend. Cuando aparezca el mensaje `Application startup complete.`, el servidor estará listo para recibir peticiones.
+La primera ejecución puede tardar varios minutos. Docker descarga las imágenes del frontend y del backend desde Docker Hub. Cuando aparezca el mensaje `Application startup complete.`, el servidor estará listo para recibir peticiones.
 
 ### 1.4 Acceso a los servicios
 
@@ -256,10 +256,10 @@ Este filtro limita la ingesta a los usuarios preparados para la demostración. E
 | Síntoma | Posible causa | Revisión recomendada |
 |---|---|---|
 | `docker: command not found` | Docker no está instalado o no está arrancado | Abrir Docker Desktop |
-| `failed to read dockerfile` | El comando se ha ejecutado fuera de `ceu-whysoserious/` | Entrar en la raíz del proyecto |
+| No se encuentra `docker-compose.yml` | El comando se ha ejecutado fuera de `ceu-whysoserious/` | Entrar en la raíz del proyecto |
 | El frontend no carga | Los contenedores todavía están arrancando | Esperar a `Application startup complete.` |
 | Falla el login con Microsoft | `.env` incompleto o callback incorrecto | Revisar Azure y `REDIRECT_URI` |
-| `/health` muestra `"model": "loading"` | El modelo no se ha cargado | Revisar `backend/models/final_teams_backup_0806/` |
+| `/health` muestra `"model": "loading"` | El modelo no se ha cargado | Revisar los logs del contenedor backend |
 | El análisis procesa 0 usuarios | El filtro `.tfg@` no coincide | Revisar `TFG_FILTER` |
 | Error de Supabase | Credenciales o tablas incorrectas | Revisar `SUPABASE_URL`, `SUPABASE_KEY` y esquema |
 
@@ -269,6 +269,6 @@ Este filtro limita la ingesta a los usuarios preparados para la demostración. E
 
 La carpeta `legacy/` conserva material histórico, prototipos y resultados de fases anteriores. Se mantiene para no perder trazabilidad, pero no forma parte del flujo activo del sistema.
 
-Los ficheros `.dockerignore` excluyen del build los elementos que no son necesarios para ejecutar la aplicación, como logs, resultados antiguos, caches, tests, material legacy y modelos que no son el activo. El modelo utilizado por el backend es `backend/models/final_teams_backup_0806/`.
+El despliegue de evaluación utiliza imágenes Docker publicadas. La imagen del backend contiene el modelo `final_teams`, mientras que la imagen del frontend sirve la aplicación ya compilada. Los ficheros `.dockerignore` se conservan para desarrollo y reconstrucción local de imágenes, excluyendo elementos que no son necesarios para ejecutar la aplicación, como logs, resultados antiguos, caches, tests y material legacy.
 
 Por diseño, el sistema no persiste el texto original de los mensajes. La base de datos conserva únicamente métricas numéricas y metadatos necesarios para la agregación y consulta posterior.

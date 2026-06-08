@@ -123,7 +123,6 @@ def fetch_metrics_for_users(
     days: int,
     project_id: int = None,
     global_mode: bool = False,
-    workspace_id: int = None, # Compatibilidad Legacy: Fase A
     start_date: str = None,
     end_date: str = None
 ) -> pd.DataFrame:
@@ -155,8 +154,6 @@ def fetch_metrics_for_users(
         if not global_mode:
             if project_id is not None:
                 q = q.eq("project_id", project_id)
-            elif workspace_id is not None:
-                q = q.eq("workspace_id", workspace_id)
             else:
                 q = q.is_("project_id", "null")
                 
@@ -179,7 +176,6 @@ def save_risk_metrics(
         "message_timestamp": timestamp,
         "message_id": message_id,
         "project_id": project_id,
-        "workspace_id": project_id # Compatibilidad Legacy: Fase A
     }
 
     for label in TARGET_LABELS:

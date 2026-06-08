@@ -33,10 +33,10 @@ Desde la raíz del repositorio:
 
 ```bash
 cd ceu-whysoserious
-docker compose up --build
+docker compose up
 ```
 
-La primera ejecución puede tardar varios minutos, ya que se construyen las imágenes del backend y del frontend. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
+La primera ejecución puede tardar varios minutos, ya que Docker descarga las imágenes publicadas del backend y del frontend. El modelo NLP final ya está incluido dentro de la imagen del backend, por lo que no es necesario instalar Git LFS ni copiar pesos manualmente. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
 
 | Servicio | URL |
 |---|---|
@@ -44,6 +44,22 @@ La primera ejecución puede tardar varios minutos, ya que se construyen las imá
 | Backend | http://localhost:8000 |
 | Estado del backend | http://localhost:8000/health |
 | Documentación de API | http://localhost:8000/docs |
+
+### Acceso de prueba
+
+Para iniciar sesión en la aplicación una vez arrancado el sistema, puede utilizarse la siguiente cuenta de demostración con rol de administrador:
+
+| Campo | Valor |
+|---|---|
+| Correo | `javier.torres.tfg@ww5dl.onmicrosoft.com` |
+| Contraseña | `123Javi!` |
+
+Si esta cuenta no permite iniciar sesión, puede emplearse esta cuenta alternativa de respaldo:
+
+| Campo | Valor |
+|---|---|
+| Correo | `ana.martinez.tfg@ww5dl.onmicrosoft.com` |
+| Contraseña | `137137137Ana` |
 
 Para detener la aplicación:
 
@@ -59,9 +75,7 @@ El paquete de entrega debe conservar esta estructura:
 ```text
 ceu-whysoserious/
 ├── backend/
-│   ├── .env
-│   └── models/
-│       └── final_teams_backup_0806/
+│   └── .env
 ├── frontend/
 └── docker-compose.yml
 ```
@@ -132,10 +146,10 @@ El backend concentra la autenticación, la comunicación con Microsoft Graph, la
 
 El módulo NLP utiliza un transformer fine-tuneado sobre mensajes de trabajo en español. La inferencia es multilabel, por lo que un mismo mensaje puede activar varias señales emocionales al mismo tiempo.
 
-El modelo activo se carga desde:
+El modelo activo se carga dentro de la imagen Docker del backend desde:
 
 ```text
-backend/models/final_teams_backup_0806/
+/app/models/final_teams/
 ```
 
 ### Etiquetas
@@ -223,7 +237,7 @@ ceu-whysoserious/
 │   ├── logic/
 │   ├── services/
 │   ├── models/
-│   │   └── final_teams_backup_0806/
+│   │   └── final_teams/
 │   ├── scripts/
 │   │   └── training/
 │   └── tests/
@@ -289,7 +303,7 @@ pytest backend/tests/legacy/
 
 ## Entrenamiento del modelo
 
-El modelo activo incluido en la entrega es `backend/models/final_teams_backup_0806/`. Los scripts de entrenamiento y evaluación se mantienen en `backend/scripts/training/`.
+El modelo activo incluido en la imagen Docker del backend es `final_teams`. En desarrollo local, si se desea ejecutar el backend sin Docker, debe existir en `backend/models/final_teams/`. Los scripts de entrenamiento y evaluación se mantienen en `backend/scripts/training/`.
 
 ```bash
 cd ceu-whysoserious/backend

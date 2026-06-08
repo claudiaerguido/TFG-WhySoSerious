@@ -8,7 +8,6 @@ import {
   Divider, Paper, TextField, IconButton, MenuItem, Select, FormControl
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import LockIcon from "@mui/icons-material/Lock";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -16,7 +15,6 @@ import {
   fetchTeamRisk, fetchTeamTrend,
   fetchProjectRisk, fetchProjectTrend,
   fetchTeamMemberBreakdown,
-  triggerAnalysis,
   fetchProjectsCatalog, addProjectMember, removeProjectMember
 } from "../../api/api";
 import { useMe } from "../../context/authState";
@@ -286,8 +284,6 @@ export default function ProjectDetailPage() {
     staleTime: 30_000,
   });
 
-  const triggerMutation = useMutation({ mutationFn: triggerAnalysis });
-
   const riskData = riskQuery.data;
   const trendData = trendQuery.data?.trend ?? [];
 
@@ -333,12 +329,9 @@ export default function ProjectDetailPage() {
             {type === 'team' ? " — Riesgo Global" : " — Riesgo Táctico"}
           </Typography>
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          {riskData?.members?.filter(m => m.role === 'employee').length ?? 0} integrantes analizados
-        </Typography>
       </Box>
 
-      {/* Controles de Acción (Periodo + Refrescar) */}
+      {/* Controles de periodo */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Typography variant="body2" color="text.secondary">
           Periodo: {rangeMode === "preset" ? DAY_LABEL[days] : DAY_LABEL[rangeMode]}
@@ -379,25 +372,8 @@ export default function ProjectDetailPage() {
             <ToggleButton value="fiscal-prev" sx={{ px: 2, fontSize: 13, textTransform: "none" }}>FY Anterior</ToggleButton>
             <ToggleButton value="custom" sx={{ px: 2, fontSize: 13, textTransform: "none" }}>Personalizado</ToggleButton>
           </ToggleButtonGroup>
-          <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<RefreshIcon />}
-            onClick={() => triggerMutation.mutate()}
-            disabled={triggerMutation.isPending}
-            size="small"
-            sx={{ textTransform: "none", borderColor: "rgba(255,255,255,0.1)", color: "text.secondary" }}
-          >
-            {triggerMutation.isPending ? "Analizando…" : "Actualizar"}
-          </Button>
         </Box>
       </Box>
-
-      {triggerMutation.isSuccess && (
-        <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-          Análisis lanzado en segundo plano. Los datos se actualizarán en breve.
-        </Alert>
-      )}
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
 

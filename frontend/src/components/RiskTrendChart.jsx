@@ -23,9 +23,10 @@ const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !label) return null;
 
     const point = payload?.[0]?.payload;
-    const value = point?.risk_score_percentage ?? 0;
+    const value = point?.display_risk_score_percentage ?? point?.risk_score_percentage;
     const hasRealData = point?.hasRealData;
-    const { label: statusLabel, color: statusColor } = getStatus(value);
+    const hasValue = typeof value === "number";
+    const { label: statusLabel, color: statusColor } = getStatus(hasValue ? value : 0);
 
     return (
         <Paper
@@ -44,20 +45,24 @@ const CustomTooltip = ({ active, payload, label }) => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <Typography variant="body2" fontWeight={700} sx={{ color: "#fff" }}>
-                    {value}%
+                    {hasRealData && hasValue ? `${value}%` : "Sin datos nuevos"}
                 </Typography>
-                <Typography variant="caption" fontWeight={700} sx={{
-                    px: 1, py: 0.2, borderRadius: 1,
-                    bgcolor: `${statusColor}20`, color: statusColor,
-                    fontSize: 10, textTransform: 'uppercase'
-                }}>
-                    {statusLabel}
-                </Typography>
+                {hasValue && (
+                    <Typography variant="caption" fontWeight={700} sx={{
+                        px: 1, py: 0.2, borderRadius: 1,
+                        bgcolor: `${statusColor}20`, color: statusColor,
+                        fontSize: 10, textTransform: 'uppercase'
+                    }}>
+                        {statusLabel}
+                    </Typography>
+                )}
             </Box>
 
             {!hasRealData && (
                 <Typography variant="caption" sx={{ color: "#cbd5e1", fontStyle: "italic", display: 'block' }}>
-                    Dato interpolado (sin mensajes)
+                    {hasValue
+                        ? `Se mantiene visualmente el ultimo valor disponible (${value}%).`
+                        : "No hay mensajes analizados en este dia."}
                 </Typography>
             )}
         </Paper>
@@ -88,7 +93,6 @@ function buildContinuousSeries(data, startDate, endDate, days) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
     const result = [];
-    const hasAnyRealData = safeData.length > 0;
     let lastKnownValue = null;
 
     for (let i = 0; i < diffDays; i++) {
@@ -107,14 +111,14 @@ function buildContinuousSeries(data, startDate, endDate, days) {
             result.push({
                 date: dateStr,
                 risk_score_percentage: realValue,
+                display_risk_score_percentage: realValue,
                 hasRealData: true,
             });
         } else {
             result.push({
                 date: dateStr,
-                risk_score_percentage: hasAnyRealData
-                    ? (lastKnownValue ?? safeData[0]?.risk_score_percentage ?? 0)
-                    : 0,
+                risk_score_percentage: null,
+                display_risk_score_percentage: lastKnownValue,
                 hasRealData: false,
             });
         }
@@ -204,11 +208,24 @@ const RiskTrendChart = ({ data = [], days = 7, startDate = null, endDate = null,
 
                         <Line
                             type="monotone"
+                            dataKey="display_risk_score_percentage"
+                            stroke={hasAnyRealData ? "rgba(99, 102, 241, 0.55)" : "rgba(148, 163, 184, 0.4)"}
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            dot={false}
+                            activeDot={false}
+                            connectNulls={false}
+                            isAnimationActive={false}
+                        />
+
+                        <Line
+                            type="monotone"
                             dataKey="risk_score_percentage"
                             stroke={hasAnyRealData ? "#6366f1" : "rgba(148, 163, 184, 0.4)"}
                             strokeWidth={3}
                             dot={renderDot}
                             activeDot={{ r: 6, fill: "#6366f1", stroke: "#fff", strokeWidth: 2 }}
+                            connectNulls={false}
                             isAnimationActive={false}
                         />
 
