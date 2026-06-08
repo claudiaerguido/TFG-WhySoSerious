@@ -99,7 +99,7 @@ app.add_middleware(SessionMiddleware, secret_key=session_secret)
 # --- MODELOS DE DATOS ---
 class TextRequest(BaseModel):
     text: str
-    model: Literal["baseline", "final"] = "baseline"
+    model: Literal["baseline", "final"] = "final"
 
 class MemberProjectRequest(BaseModel):
     user_email: str
@@ -499,22 +499,23 @@ def health_check():
 @app.post("/predict")
 async def predict(request: TextRequest):
     """Endpoint manual para validación rápida del motor de NLP."""
-    if request.model == "baseline":
+    if request.model == "baseline" and nlp_model.base_model and nlp_model.base_tokenizer:
         res = nlp_model.baseline_predict(request.text)
         return {
-            "model": "baseline", 
-            "sentiment_label": res["label"], 
+            "model": "baseline",
+            "sentiment_label": res["label"],
             "confidence": res["score"],
             "stars": res.get("stars", 0)
         }
 
     # Fallback automático si el modelo final no está cargado
     if nlp_model._model is None:
-        res = nlp_model.baseline_predict(request.text)
         return {
-            "labels": {res["label"]: res["score"]}, 
-            "is_fallback": True, 
-            "model": "final"
+            "error": "Modelo final no cargado",
+            "is_fallback": True,
+            "model": "final",
+            "labels": {},
+            "detected_labels": []
         }
     
     # Predicción real con el modelo entrenado

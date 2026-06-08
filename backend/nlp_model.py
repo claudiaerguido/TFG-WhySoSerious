@@ -40,13 +40,16 @@ class NLPModel:
         # 2. Carga del modelo baseline (Estrellas)
         self.base_tokenizer = None
         self.base_model = None
-        try:
-            self.base_tokenizer = AutoTokenizer.from_pretrained(BASELINE_MODEL_ID)
-            self.base_model = AutoModelForSequenceClassification.from_pretrained(BASELINE_MODEL_ID)
-            self.base_model.eval()
-            print("Modelo Baseline cargado.")
-        except Exception as e:
-            print(f"Error cargando baseline: {e}")
+        if os.getenv("TRANSFORMERS_OFFLINE") == "1":
+            print("Modelo Baseline omitido en entorno offline; el endpoint usa el modelo final.")
+        else:
+            try:
+                self.base_tokenizer = AutoTokenizer.from_pretrained(BASELINE_MODEL_ID)
+                self.base_model = AutoModelForSequenceClassification.from_pretrained(BASELINE_MODEL_ID)
+                self.base_model.eval()
+                print("Modelo Baseline cargado.")
+            except Exception as e:
+                print(f"Error cargando baseline: {e}")
 
         # 3. Carga de umbrales dinámicos
         self.thresholds = self._load_thresholds()
