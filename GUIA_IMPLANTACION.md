@@ -27,10 +27,10 @@ docker compose version
 
 ### 1.2 Estructura esperada
 
-El fichero `.env` debe encontrarse en la carpeta del backend:
+Tras clonar el repositorio, su raíz no tiene ninguna subcarpeta intermedia: `backend/`, `frontend/` y `docker-compose.yml` están directamente en la raíz. El fichero `.env` debe colocarse dentro de la carpeta del backend:
 
 ```text
-ceu-whysoserious/
+<raíz-del-repositorio-clonado>/
 └── backend/
     └── .env
 ```
@@ -45,10 +45,9 @@ Por tanto, para la evaluación no es necesario copiar la carpeta del modelo, ins
 
 ### 1.3 Arranque de la aplicación
 
-Desde la raíz del repositorio:
+Desde la raíz del repositorio clonado:
 
 ```bash
-cd ceu-whysoserious
 docker compose up
 ```
 
@@ -84,12 +83,12 @@ Una vez arrancado el sistema, se recomienda:
 
 ## 2. Ejecución local sin Docker
 
-Este modo se conserva como alternativa para desarrollo o depuración. Para la evaluación del tribunal se recomienda utilizar Docker.
+Este modo se conserva como alternativa para desarrollo o depuración. Para la evaluación se recomienda utilizar Docker.
 
 ### 2.1 Backend
 
 ```bash
-cd ceu-whysoserious/backend
+cd backend
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -109,7 +108,7 @@ El backend queda disponible en `http://localhost:8000`.
 En otra terminal:
 
 ```bash
-cd ceu-whysoserious/frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -256,7 +255,7 @@ Este filtro limita la ingesta a los usuarios preparados para la demostración. E
 | Síntoma | Posible causa | Revisión recomendada |
 |---|---|---|
 | `docker: command not found` | Docker no está instalado o no está arrancado | Abrir Docker Desktop |
-| No se encuentra `docker-compose.yml` | El comando se ha ejecutado fuera de `ceu-whysoserious/` | Entrar en la raíz del proyecto |
+| No se encuentra `docker-compose.yml` | El comando se ha ejecutado fuera de la raíz del repositorio clonado | Entrar en la carpeta donde están `backend/`, `frontend/` y `docker-compose.yml` |
 | El frontend no carga | Los contenedores todavía están arrancando | Esperar a `Application startup complete.` |
 | Falla el login con Microsoft | `.env` incompleto o callback incorrecto | Revisar Azure y `REDIRECT_URI` |
 | `/health` muestra `"model": "loading"` | El modelo no se ha cargado | Revisar los logs del contenedor backend |
@@ -267,8 +266,6 @@ Este filtro limita la ingesta a los usuarios preparados para la demostración. E
 
 ## 7. Notas sobre la entrega
 
-La carpeta `legacy/` conserva material histórico, prototipos y resultados de fases anteriores. Se mantiene para no perder trazabilidad, pero no forma parte del flujo activo del sistema.
-
-El despliegue de evaluación utiliza imágenes Docker publicadas. La imagen del backend contiene el modelo `final_teams`, mientras que la imagen del frontend sirve la aplicación ya compilada. Los ficheros `.dockerignore` se conservan para desarrollo y reconstrucción local de imágenes, excluyendo elementos que no son necesarios para ejecutar la aplicación, como logs, resultados antiguos, caches, tests y material legacy.
+El despliegue de evaluación utiliza imágenes Docker publicadas. La imagen del backend contiene el modelo `final_teams`, mientras que la imagen del frontend sirve la aplicación ya compilada. Los ficheros `.dockerignore` se conservan para desarrollo y reconstrucción local de imágenes, excluyendo elementos que no son necesarios para ejecutar la aplicación, como logs, resultados antiguos, caches y tests.
 
 Por diseño, el sistema no persiste el texto original de los mensajes. La base de datos conserva únicamente métricas numéricas y metadatos necesarios para la agregación y consulta posterior.

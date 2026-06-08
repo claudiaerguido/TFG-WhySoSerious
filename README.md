@@ -25,14 +25,34 @@ Este proyecto se ha desarrollado como Trabajo de Fin de Grado. Su objetivo no es
 
 ## Ejecución para evaluación
 
-La forma recomendada de ejecutar el proyecto es mediante Docker Compose. De este modo, el tribunal no necesita instalar manualmente Python ni Node.js; únicamente debe disponer de Docker Desktop, del fichero `backend/.env` facilitado con la entrega y de conexión a Internet durante el primer arranque.
+La forma recomendada de ejecutar el proyecto es mediante Docker Compose. De este modo, no es necesario instalar manualmente Python ni Node.js; únicamente hace falta disponer de Docker Desktop, del fichero `backend/.env` facilitado con la entrega y de conexión a Internet durante el primer arranque.
 
-### Arranque con Docker
+### 1. Obtener el proyecto
 
-Desde la raíz del repositorio:
+Clona el repositorio y entra en su raíz. No hay ninguna subcarpeta intermedia: `backend/`, `frontend/` y `docker-compose.yml` están directamente en la raíz del repositorio:
 
 ```bash
-cd ceu-whysoserious
+git clone https://github.com/claudiaerguido/TFG-WhySoSerius.git
+cd TFG-WhySoSerius
+```
+
+A continuación, coloca el fichero `backend/.env` facilitado con la entrega de modo que la estructura quede así:
+
+```text
+TFG-WhySoSerius/
+├── backend/
+│   └── .env
+├── frontend/
+└── docker-compose.yml
+```
+
+El `.env` contiene las credenciales del entorno preparado para la evaluación. Por seguridad no forma parte del repositorio público, pero debe estar presente en `backend/.env` **antes** de arrancar el sistema.
+
+### 2. Arrancar con Docker
+
+Desde la raíz del repositorio clonado:
+
+```bash
 docker compose up
 ```
 
@@ -45,9 +65,9 @@ La primera ejecución puede tardar varios minutos, ya que Docker descarga las im
 | Estado del backend | http://localhost:8000/health |
 | Documentación de API | http://localhost:8000/docs |
 
-### Acceso de prueba
+### 3. Iniciar sesión
 
-Para iniciar sesión en la aplicación una vez arrancado el sistema, puede utilizarse la siguiente cuenta de demostración con rol de administrador:
+Abre `http://localhost:5173` y pulsa "Iniciar sesión con Microsoft". Esto redirige a la pantalla de autenticación de Microsoft, donde puede usarse la siguiente cuenta de demostración con rol de administrador (la primera vez puede pedir aceptar los permisos delegados de la aplicación; basta con aceptarlos para continuar):
 
 | Campo | Valor |
 |---|---|
@@ -61,33 +81,31 @@ Si esta cuenta no permite iniciar sesión, puede emplearse esta cuenta alternati
 | Correo | `ana.martinez.tfg@ww5dl.onmicrosoft.com` |
 | Contraseña | `137137137Ana` |
 
-Para detener la aplicación:
+### 4. Qué revisar
+
+Para recorrer el sistema de extremo a extremo, se recomienda comprobar:
+
+1. El dashboard global, con el riesgo agregado de los equipos y proyectos visibles para el rol de administrador.
+2. La vista de detalle de un equipo o proyecto, con su evolución temporal.
+3. El perfil supervisado de un empleado.
+4. `http://localhost:8000/health`, que debe devolver `{"status": "ok", "model": "loaded"}`.
+5. `http://localhost:8000/docs`, con la documentación interactiva (OpenAPI) de la API.
+
+Para una checklist más detallada y la solución de problemas habituales (login, modelo, Supabase...), consulta [`GUIA_IMPLANTACION.md`](./GUIA_IMPLANTACION.md).
+
+### Detener la aplicación
 
 ```bash
 Ctrl+C
 docker compose down
 ```
 
-### Archivos necesarios
-
-El paquete de entrega debe conservar esta estructura:
-
-```text
-ceu-whysoserious/
-├── backend/
-│   └── .env
-├── frontend/
-└── docker-compose.yml
-```
-
-El fichero `.env` contiene las credenciales del entorno preparado para la evaluación. Por seguridad, no forma parte del repositorio público, pero debe estar presente en `backend/.env` antes de arrancar el sistema.
-
 ### Ejecución sin Docker
 
 La ejecución manual se mantiene como alternativa para desarrollo:
 
 ```bash
-cd ceu-whysoserious/backend
+cd backend
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -97,7 +115,7 @@ uvicorn main:app --reload
 En otra terminal:
 
 ```bash
-cd ceu-whysoserious/frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -244,12 +262,9 @@ ceu-whysoserious/
 ├── frontend/
 │   └── src/
 ├── docs/
-├── legacy/
 ├── docker-compose.yml
 └── GUIA_IMPLANTACION.md
 ```
-
-La carpeta `legacy/` conserva material histórico, prototipos y resultados de fases anteriores. No forma parte del flujo activo de ejecución ni se incluye en el contexto Docker.
 
 ---
 
@@ -306,7 +321,7 @@ pytest backend/tests/legacy/
 El modelo activo incluido en la imagen Docker del backend es `final_teams`. En desarrollo local, si se desea ejecutar el backend sin Docker, debe existir en `backend/models/final_teams/`. Los scripts de entrenamiento y evaluación se mantienen en `backend/scripts/training/`.
 
 ```bash
-cd ceu-whysoserious/backend
+cd backend
 source venv/bin/activate
 python scripts/training/train_teams.py
 python scripts/training/evaluate_goldset.py
