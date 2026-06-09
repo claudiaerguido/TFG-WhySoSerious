@@ -41,7 +41,7 @@ El modelo utilizado por el backend se incluye dentro de la imagen Docker publica
 claudiaea/whysoserious-backend:latest
 ```
 
-Por tanto, para la evaluación no es necesario copiar la carpeta del modelo, instalar Git LFS ni descargar pesos desde Hugging Face durante el arranque. Si se ejecuta el backend manualmente fuera de Docker, entonces sí debe existir una copia local del modelo en `backend/models/final_teams/`.
+Por tanto, para la evaluación no es necesario copiar la carpeta del modelo ni descargar pesos desde Hugging Face durante el arranque, aunque sí debe estar instalado Git LFS para recuperar los archivos del modelo al clonar el repositorio. Si se ejecuta el backend manualmente fuera de Docker, entonces sí debe existir una copia local del modelo en `backend/models/final_teams/`.
 
 ### 1.3 Arranque de la aplicación
 

@@ -25,16 +25,18 @@ Este proyecto se ha desarrollado como Trabajo de Fin de Grado. Su objetivo no es
 
 ## Ejecución para evaluación
 
-La forma recomendada de ejecutar el proyecto es mediante Docker Compose. De este modo, no es necesario instalar manualmente Python ni Node.js; únicamente hace falta disponer de Docker Desktop, del fichero `backend/.env` facilitado con la entrega y de conexión a Internet durante el primer arranque.
+La forma recomendada de ejecutar el proyecto es mediante Docker Compose. De este modo, no es necesario instalar manualmente Python ni Node.js; únicamente hace falta disponer de Docker Desktop, de Git LFS para recuperar el modelo final durante el clon, del fichero `backend/.env` facilitado con la entrega y de conexión a Internet durante el primer arranque.
 
 ### 1. Obtener el proyecto
 
 Clona el repositorio y entra en su raíz. No hay ninguna subcarpeta intermedia: `backend/`, `frontend/` y `docker-compose.yml` están directamente en la raíz del repositorio:
 
 ```bash
-git clone https://github.com/claudiaerguido/TFG-WhySoSerius.git
-cd TFG-WhySoSerius
+git clone https://github.com/claudiaerguido/TFG-WhySoSerious.git
+cd TFG-WhySoSerious
 ```
+
+Si Git LFS no está instalado en el equipo, debe instalarse previamente para que el modelo final del backend se descargue junto con el repositorio.
 
 A continuación, coloca el fichero `backend/.env` facilitado con la entrega de modo que la estructura quede así:
 
@@ -56,7 +58,7 @@ Desde la raíz del repositorio clonado:
 docker compose up
 ```
 
-La primera ejecución puede tardar varios minutos, ya que Docker construye localmente las imágenes del backend y del frontend a partir de los `Dockerfile` del proyecto. El modelo NLP final ya queda incluido dentro del backend durante esa construcción, por lo que no es necesario instalar Git LFS ni copiar pesos manualmente. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
+La primera ejecución puede tardar varios minutos, ya que Docker construye localmente las imágenes del backend y del frontend a partir de los `Dockerfile` del proyecto. El modelo NLP final queda incluido en el árbol del repositorio gracias a Git LFS, por lo que no es necesario copiar pesos manualmente. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
 
 | Servicio | URL |
 |---|---|
