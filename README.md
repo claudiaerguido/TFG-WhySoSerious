@@ -261,7 +261,6 @@ ceu-whysoserious/
 │   └── tests/
 ├── frontend/
 │   └── src/
-├── docs/
 ├── docker-compose.yml
 └── GUIA_IMPLANTACION.md
 ```
