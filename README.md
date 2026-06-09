@@ -34,6 +34,7 @@ Clona el repositorio y entra en su raíz. No hay ninguna subcarpeta intermedia: 
 ```bash
 git clone https://github.com/claudiaerguido/TFG-WhySoSerious.git
 cd TFG-WhySoSerious
+git lfs install
 git lfs pull
 ```
 
