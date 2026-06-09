@@ -43,7 +43,7 @@ Si Git LFS no está instalado en el equipo, debe instalarse previamente para que
 A continuación, coloca el fichero `backend/.env` facilitado con la entrega de modo que la estructura quede así:
 
 ```text
-TFG-WhySoSerius/
+TFG-WhySoSerious/
 ├── backend/
 │   └── .env
 ├── frontend/
@@ -94,8 +94,7 @@ Para recorrer el sistema de extremo a extremo, se recomienda comprobar:
 1. El dashboard global, con el riesgo agregado de los equipos y proyectos visibles para el rol de administrador.
 2. La vista de detalle de un equipo o proyecto, con su evolución temporal.
 3. El perfil supervisado de un empleado.
-4. `http://localhost:8000/health`, que debe devolver `{"status": "ok", "model": "loaded"}`.
-5. `http://localhost:8000/docs`, con la documentación interactiva (OpenAPI) de la API.
+4. `http://localhost:8000/docs`, con la documentación interactiva (OpenAPI) de la API.
 
 Para una checklist más detallada y la solución de problemas habituales (login, modelo, Supabase...), consulta [`GUIA_IMPLANTACION.md`](./GUIA_IMPLANTACION.md).
 
@@ -188,17 +187,6 @@ El modelo activo se carga dentro de la imagen Docker del backend desde:
 
 La implementación aplica umbrales por etiqueta, definidos en `backend/thresholds.json`. Si ninguna señal operativa supera su umbral, el resultado se considera `NEUTRO`. No se utiliza un sistema de expresiones regulares ni patrones léxicos para rescatar etiquetas: la decisión depende de la inferencia del modelo y del filtrado por umbral.
 
-### Prueba rápida
-
-Con el backend arrancado:
-
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Estoy agotada y no llego a los plazos", "model": "final"}'
-```
-
----
 
 ## Motor de riesgo
 
