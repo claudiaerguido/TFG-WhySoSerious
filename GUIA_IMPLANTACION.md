@@ -15,6 +15,7 @@ Antes de arrancar el proyecto es necesario contar con:
 | Requisito | Motivo |
 |---|---|
 | Docker Desktop | Descargar y ejecutar los contenedores |
+| Git LFS | Recuperar el modelo final incluido en el repositorio |
 | `backend/.env` | Cargar credenciales y configuración del entorno |
 | Conexión a Internet | Descarga inicial de imágenes y autenticación con Microsoft |
 
@@ -35,23 +36,18 @@ Tras clonar el repositorio, su raíz no tiene ninguna subcarpeta intermedia: `ba
     └── .env
 ```
 
-El modelo utilizado por el backend se incluye dentro de la imagen Docker publicada:
-
-```text
-claudiaea/whysoserious-backend:latest
-```
-
-Por tanto, para la evaluación no es necesario copiar la carpeta del modelo ni descargar pesos desde Hugging Face durante el arranque, aunque sí debe estar instalado Git LFS para recuperar los archivos del modelo al clonar el repositorio. Si se ejecuta el backend manualmente fuera de Docker, entonces sí debe existir una copia local del modelo en `backend/models/final_teams/`.
+El modelo utilizado por el backend se recupera con Git LFS al clonar el repositorio y queda disponible para la construcción local de la imagen del backend. Por tanto, debe ejecutarse `git lfs pull` dentro de la carpeta del proyecto antes de arrancar Docker. Si se ejecuta el backend manualmente fuera de Docker, entonces sí debe existir una copia local del modelo en `backend/models/final_teams/`.
 
 ### 1.3 Arranque de la aplicación
 
 Desde la raíz del repositorio clonado:
 
 ```bash
-docker compose up
+git lfs pull
+docker compose up --build
 ```
 
-La primera ejecución puede tardar varios minutos. Docker construye localmente las imágenes del frontend y del backend a partir de los `Dockerfile` del repositorio. Cuando aparezca el mensaje `Application startup complete.`, el servidor estará listo para recibir peticiones.
+La primera ejecución puede tardar varios minutos. Docker construye localmente las imágenes del frontend y del backend a partir de los `Dockerfile` del repositorio. Cuando aparezca el mensaje `Application startup complete.`, el servidor estará listo para recibir peticiones. Si el entorno ya ha sido construido previamente, puede utilizarse después `docker compose up`.
 
 ### 1.4 Acceso a los servicios
 

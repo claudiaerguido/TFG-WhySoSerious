@@ -34,9 +34,10 @@ Clona el repositorio y entra en su raíz. No hay ninguna subcarpeta intermedia: 
 ```bash
 git clone https://github.com/claudiaerguido/TFG-WhySoSerious.git
 cd TFG-WhySoSerious
+git lfs pull
 ```
 
-Si Git LFS no está instalado en el equipo, debe instalarse previamente para que el modelo final del backend se descargue junto con el repositorio.
+Si Git LFS no está instalado en el equipo, debe instalarse previamente para que el modelo final del backend se descargue junto con el repositorio. El comando `git lfs pull` debe ejecutarse dentro de la carpeta del repositorio clonado.
 
 A continuación, coloca el fichero `backend/.env` facilitado con la entrega de modo que la estructura quede así:
 
@@ -55,10 +56,12 @@ El `.env` contiene las credenciales del entorno preparado para la evaluación. P
 Desde la raíz del repositorio clonado:
 
 ```bash
-docker compose up
+docker compose up --build
 ```
 
 La primera ejecución puede tardar varios minutos, ya que Docker construye localmente las imágenes del backend y del frontend a partir de los `Dockerfile` del proyecto. El modelo NLP final queda incluido en el árbol del repositorio gracias a Git LFS, por lo que no es necesario copiar pesos manualmente. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
+
+Si la aplicación ya ha sido construida previamente en ese equipo, puede utilizarse después `docker compose up` para arrancarla de nuevo sin reconstruir las imágenes.
 
 | Servicio | URL |
 |---|---|
