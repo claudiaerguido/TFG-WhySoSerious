@@ -286,24 +286,11 @@ def list_chat_messages(chat_id: str, top: int = 50, since: Optional[str] = None,
  
 def collect_all_messages(limit_per_chat: int = 20, user_top: int = 50) -> List[Dict]:
     """
-    Recorre la organización y devuelve mensajes listos para análisis de riesgo psicosocial.
- 
-    CAMBIO RESPECTO A LA VERSIÓN ANTERIOR:
-    - Se añade 'chats_procesados' para evitar mensajes duplicados.
- 
-    El problema anterior: si Ana y Pedro tienen un chat compartido, ese chat
-    aparecía en los chats de Ana Y en los chats de Pedro. El código lo procesaba
-    dos veces, guardando cada mensaje duplicado. Eso inflaba las métricas de
-    burnout de cada persona.
- 
-    La solución: llevamos un registro de los IDs de chat ya procesados. Si un
-    chat ya fue procesado cuando recorrimos a Ana, lo saltamos cuando llegamos
-    a Pedro. Cada mensaje se procesa una sola vez y se asocia a quien lo escribió
-    (sender_email), no al usuario por el que llegamos al chat.
- 
-    Notas:
-    - Pensada para pruebas o carga inicial pequeña.
-    - Para producción con muchos usuarios, usar delta queries de Graph API.
+    Recorre la organización y devuelve mensajes listos para el análisis de riesgo psicosocial.
+
+    Evita duplicados en chats compartidos y asocia cada mensaje a su emisor real.
+
+    Pensada para pruebas y cargas iniciales pequeñas.
     """
     results: List[Dict] = []
     token = get_app_token()
