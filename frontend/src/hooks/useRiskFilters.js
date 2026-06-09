@@ -30,6 +30,8 @@ export function useRiskFilters(initialDays = 7) {
         }
     };
 
+    const customDatesReady = Boolean(customRange.start && customRange.end);
+
     // Fechas derivadas según el modo de filtro seleccionado
     const queryStart =
         rangeMode === "custom" ? customRange.start :
@@ -50,6 +52,7 @@ export function useRiskFilters(initialDays = 7) {
         setCustomRange,
         queryStart,
         queryEnd,
+        customDatesReady,
         handleFilterChange,
         fySettings
     };

@@ -27,11 +27,10 @@ const LEVEL_CONFIG = {
  * @param {object} props
  * @param {string} props.riskLevel  — "Verde" | "Amarillo" | "Rojo"
  * @param {number} props.riskScore  — Porcentaje 0-100
- * @param {number} props.sampleSize — Número de usuarios analizados
  * @param {number|null} props.prevScore — Score de la semana anterior (para comparativa)
  * @param {boolean} props.loading
  */
-export default function RiskCard({ riskLevel, riskScore, sampleSize, prevScore = null, loading }) {
+export default function RiskCard({ riskLevel, riskScore, prevScore = null, loading }) {
     if (loading) {
         return (
             <Box sx={{
@@ -117,12 +116,6 @@ export default function RiskCard({ riskLevel, riskScore, sampleSize, prevScore =
                 {cfg.description}
             </Typography>
 
-            {/* Nota de muestra */}
-            {sampleSize !== undefined && (
-                <Typography variant="caption" color="text.disabled" sx={{ display: "block", mt: 1 }}>
-                    Basado en {sampleSize} miembro{sampleSize !== 1 ? "s" : ""} · Sin datos individuales
-                </Typography>
-            )}
         </Box>
     );
 }

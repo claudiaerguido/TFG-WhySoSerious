@@ -77,6 +77,9 @@ function buildContinuousSeries(data, startDate, endDate, days) {
 
     let startObj, endObj;
     if (startDate && endDate) {
+        if (Number.isNaN(Date.parse(startDate)) || Number.isNaN(Date.parse(endDate))) {
+            return [];
+        }
         const [sy, sm, sd] = startDate.split('-');
         const [ey, em, ed] = endDate.split('-');
         startObj = new Date(sy, sm - 1, sd);

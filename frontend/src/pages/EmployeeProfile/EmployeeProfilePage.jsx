@@ -24,7 +24,7 @@ export default function EmployeeProfilePage() {
 
     const {
         days, rangeMode, customRange, setCustomRange,
-        queryStart, queryEnd, handleFilterChange
+        queryStart, queryEnd, customDatesReady, handleFilterChange
     } = useRiskFilters(7);
 
     const profileQuery = useQuery({
@@ -36,6 +36,7 @@ export default function EmployeeProfilePage() {
     const trendQuery = useQuery({
         queryKey: ["employeeTrend", email, days, rangeMode, queryStart, queryEnd],
         queryFn: () => fetchEmployeeTrend(email, days, queryStart, queryEnd),
+        enabled: rangeMode !== "custom" || customDatesReady,
         staleTime: 60_000,
     });
 
@@ -91,7 +92,7 @@ export default function EmployeeProfilePage() {
             {/* Controles */}
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                    Periodo: {rangeMode === "preset" ? DAY_LABEL[days] : DAY_LABEL[rangeMode]}
+                    Periodo: {rangeMode === "preset" ? DAY_LABEL[days] : rangeMode === "custom" ? "Personalizado" : DAY_LABEL[rangeMode]}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                     {rangeMode === "custom" && (
@@ -160,6 +161,29 @@ export default function EmployeeProfilePage() {
                         <CardContent sx={{ p: 0 }}>
                             {trendQuery.isLoading ? (
                                 <Skeleton variant="rounded" height={220} />
+                            ) : rangeMode === "custom" && !customDatesReady ? (
+                                <Paper
+                                    variant="outlined"
+                                    sx={{
+                                        p: 4,
+                                        height: 220,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        textAlign: "center",
+                                        bgcolor: "transparent",
+                                        borderStyle: "dashed"
+                                    }}
+                                >
+                                    <Box>
+                                        <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
+                                            Selecciona un rango de fechas
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Para usar el modo personalizado, indica una fecha de inicio y una fecha de fin.
+                                        </Typography>
+                                    </Box>
+                                </Paper>
                             ) : trendData.length === 0 ? (
                                 <Paper variant="outlined" sx={{ p: 4, textAlign: "center", bgcolor: "transparent", borderStyle: "dashed" }}>
                                     <Typography variant="body2" color="text.secondary">Sin datos históricos suficientes</Typography>

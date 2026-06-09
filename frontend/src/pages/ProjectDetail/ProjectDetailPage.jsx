@@ -116,7 +116,6 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
 
           <Typography variant="body2" className="member-risk-label">
             {type === "team" ? "Riesgo global" : "Riesgo táctico"}
-            {member.role !== "employee" ? " · Excluido de la media" : ""}
           </Typography>
         </Box>
 
@@ -263,7 +262,7 @@ export default function ProjectDetailPage() {
   const type = location.pathname.includes("/team/") ? "team" : "project";
   const {
     days, rangeMode, customRange, setCustomRange,
-    queryStart, queryEnd, handleFilterChange
+    queryStart, queryEnd, customDatesReady, handleFilterChange
   } = useRiskFilters(7);
 
   const queryClient = useQueryClient();
@@ -275,12 +274,14 @@ export default function ProjectDetailPage() {
   const riskQuery = useQuery({
     queryKey: [type === "team" ? "teamRisk" : "projectRisk", itemId, days, rangeMode, queryStart, queryEnd],
     queryFn: () => type === "team" ? fetchTeamRisk(itemId, days, queryStart, queryEnd) : fetchProjectRisk(itemId, days, queryStart, queryEnd),
+    enabled: rangeMode !== "custom" || customDatesReady,
     staleTime: 30_000,
   });
 
   const trendQuery = useQuery({
     queryKey: [type === "team" ? "teamTrend" : "projectTrend", itemId, days, rangeMode, queryStart, queryEnd],
     queryFn: () => type === "team" ? fetchTeamTrend(itemId, days, queryStart, queryEnd) : fetchProjectTrend(itemId, days, queryStart, queryEnd),
+    enabled: rangeMode !== "custom" || customDatesReady,
     staleTime: 30_000,
   });
 
@@ -304,6 +305,8 @@ export default function ProjectDetailPage() {
   }
 
   const level = riskData?.risk_level;
+  const responsibleMember = (riskData?.members ?? []).find((m) => m.role === "manager") || null;
+  const responsibleLabel = responsibleMember?.display_name || responsibleMember?.user_email || null;
 
   // Trend variation
   let variationText = "—";
@@ -329,12 +332,17 @@ export default function ProjectDetailPage() {
             {type === 'team' ? " — Riesgo Global" : " — Riesgo Táctico"}
           </Typography>
         </Typography>
+        {responsibleLabel && (
+          <Typography variant="body2" color="text.secondary">
+            Responsable: {responsibleLabel}
+          </Typography>
+        )}
       </Box>
 
       {/* Controles de periodo */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Periodo: {rangeMode === "preset" ? DAY_LABEL[days] : DAY_LABEL[rangeMode]}
+          Periodo: {rangeMode === "preset" ? DAY_LABEL[days] : rangeMode === "custom" ? "Personalizado" : DAY_LABEL[rangeMode]}
         </Typography>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           {rangeMode === "custom" && (
@@ -393,7 +401,6 @@ export default function ProjectDetailPage() {
             <RiskCard
               riskLevel={level}
               riskScore={riskData?.risk_score_percentage}
-              sampleSize={riskData?.members?.length ?? 0}
             />
           )}
         </Box>
@@ -409,15 +416,37 @@ export default function ProjectDetailPage() {
             <CardContent sx={{ p: 0, pb: "0 !important" }}>
               {trendQuery.isLoading ? (
                 <Skeleton variant="rounded" height={200} sx={{ borderRadius: 3 }} />
+              ) : rangeMode === "custom" && !customDatesReady ? (
+                <Box
+                  sx={{
+                    height: 200,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    color: "text.secondary",
+                    border: "1px dashed rgba(255,255,255,0.14)",
+                    borderRadius: 3,
+                    px: 3,
+                  }}
+                >
+                  <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
+                    Selecciona un rango de fechas
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Para usar el modo personalizado, indica una fecha de inicio y una fecha de fin.
+                  </Typography>
+                </Box>
               ) : trendData.length === 0 ? (
                 <Box sx={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "text.secondary", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 3 }}>
                   Sin suficientes datos históricos.
                 </Box>
               ) : (
                 <Box sx={{ mt: 2 }}>
-                  <RiskTrendChart data={trendData} days={days} startDate={queryStart} endDate={queryEnd} />
-                </Box>
-              )}
+              <RiskTrendChart data={trendData} days={days} startDate={queryStart} endDate={queryEnd} />
+            </Box>
+          )}
               {trendData.length > 1 && (
                 <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 1, textAlign: "center" }}>
                   Variación en el periodo: {variationText}
@@ -443,14 +472,6 @@ export default function ProjectDetailPage() {
             <Skeleton variant="rounded" height={200} sx={{ borderRadius: 2 }} />
           ) : (
             <Box className="member-list-container">
-              {/* Sección de Managers (si es equipo) */}
-              {type === "team" && (riskData?.members ?? []).filter(m => m.role !== 'employee').map(m => (
-                <Box key={m.user_email} sx={{ mb: 1 }}>
-                  <Typography variant="caption" color="text.disabled" sx={{ ml: 1, mb: 0.5, display: "block", fontWeight: 700 }}>RESPONSABLE / GESTIÓN</Typography>
-                  <MemberRiskRow member={m} type={type} days={days} rangeMode={rangeMode} customRange={customRange} />
-                </Box>
-              ))}
-
               {/* Sección de Empleados */}
               {(riskData?.members ?? []).filter(m => m.role === 'employee').map((m) => (
                 <MemberRiskRow key={m.user_email} member={m} type={type} days={days} rangeMode={rangeMode} customRange={customRange} />
