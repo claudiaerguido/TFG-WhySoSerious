@@ -56,7 +56,7 @@ Desde la raíz del repositorio clonado:
 docker compose up
 ```
 
-La primera ejecución puede tardar varios minutos, ya que Docker descarga las imágenes publicadas del backend y del frontend. El modelo NLP final ya está incluido dentro de la imagen del backend, por lo que no es necesario instalar Git LFS ni copiar pesos manualmente. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
+La primera ejecución puede tardar varios minutos, ya que Docker construye localmente las imágenes del backend y del frontend a partir de los `Dockerfile` del proyecto. El modelo NLP final ya queda incluido dentro del backend durante esa construcción, por lo que no es necesario instalar Git LFS ni copiar pesos manualmente. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
 
 | Servicio | URL |
 |---|---|

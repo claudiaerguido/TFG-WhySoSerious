@@ -51,7 +51,7 @@ Desde la raíz del repositorio clonado:
 docker compose up
 ```
 
-La primera ejecución puede tardar varios minutos. Docker descarga las imágenes del frontend y del backend desde Docker Hub. Cuando aparezca el mensaje `Application startup complete.`, el servidor estará listo para recibir peticiones.
+La primera ejecución puede tardar varios minutos. Docker construye localmente las imágenes del frontend y del backend a partir de los `Dockerfile` del repositorio. Cuando aparezca el mensaje `Application startup complete.`, el servidor estará listo para recibir peticiones.
 
 ### 1.4 Acceso a los servicios
 
@@ -266,6 +266,6 @@ Este filtro limita la ingesta a los usuarios preparados para la demostración. E
 
 ## 7. Notas sobre la entrega
 
-El despliegue de evaluación utiliza imágenes Docker publicadas. La imagen del backend contiene el modelo `final_teams`, mientras que la imagen del frontend sirve la aplicación ya compilada. Los ficheros `.dockerignore` se conservan para desarrollo y reconstrucción local de imágenes, excluyendo elementos que no son necesarios para ejecutar la aplicación, como logs, resultados antiguos, caches y tests.
+El despliegue de evaluación utiliza imágenes Docker construidas localmente a partir del código del repositorio. Durante esa construcción, el backend incorpora el modelo `final_teams`, mientras que el frontend genera y sirve la aplicación ya compilada. Los ficheros `.dockerignore` se conservan para desarrollo y reconstrucción local de imágenes, excluyendo elementos que no son necesarios para ejecutar la aplicación, como logs, resultados antiguos, caches y tests.
 
 Por diseño, el sistema no persiste el texto original de los mensajes. La base de datos conserva únicamente métricas numéricas y metadatos necesarios para la agregación y consulta posterior.

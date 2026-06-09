@@ -1,6 +1,9 @@
 services:
   backend:
-    image: claudiaea/whysoserious-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: claudiaea/whysoserious-backend:local
     ports:
       - "8000:8000"
     env_file:
@@ -11,7 +14,10 @@ services:
     restart: unless-stopped   
 
   frontend:
-    image: claudiaea/whysoserious-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: claudiaea/whysoserious-frontend:local
     ports:
       - "5173:80"
     depends_on:
