@@ -202,15 +202,6 @@ El modelo activo se carga dentro de la imagen Docker del backend desde:
 
 La implementación aplica umbrales por etiqueta, definidos en `backend/thresholds.json`. Si ninguna señal operativa supera su umbral, el resultado se considera `NEUTRO`. No se utiliza un sistema de expresiones regulares ni patrones léxicos para rescatar etiquetas: la decisión depende de la inferencia del modelo y del filtrado por umbral.
 
-### Prueba rápida
-
-Con el backend arrancado:
-
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Estoy agotada y no llego a los plazos", "model": "final"}'
-```
 
 ---
 
