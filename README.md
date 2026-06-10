@@ -2,7 +2,7 @@
 
 Sistema de evaluación agregada de riesgo psicosocial en equipos de trabajo a partir de comunicaciones corporativas autorizadas en Microsoft Teams.
 
-Este proyecto se ha desarrollado como Trabajo de Fin de Grado. Su objetivo no es leer ni interpretar conversaciones individuales, sino transformar señales lingüísticas ya existentes en indicadores agregados que ayuden a observar situaciones de sobrecarga, estrés, fatiga o conflicto dentro de equipos y proyectos. La solución combina autenticación corporativa, ingesta controlada mediante Microsoft Graph, inferencia con un modelo transformer fine-tuneado, cálculo de riesgo y visualización web con control de acceso por rol.
+Este proyecto se ha desarrollado como Trabajo de Fin de Grado. Su objetivo no es leer ni interpretar conversaciones individuales, sino transformar señales lingüísticas ya existentes en indicadores agregados que ayuden a observar situaciones de sobrecarga, estrés, fatiga o conflicto dentro de equipos y proyectos. La solución combina autenticación corporativa, ingesta controlada mediante Microsoft Graph, cálculo de riesgo y visualización web con control de acceso por rol.
 
 ---
 
@@ -25,7 +25,7 @@ Este proyecto se ha desarrollado como Trabajo de Fin de Grado. Su objetivo no es
 
 ## Ejecución para evaluación
 
-La forma recomendada de ejecutar el proyecto es mediante Docker Compose. De este modo, no es necesario instalar manualmente Python ni Node.js; únicamente hace falta disponer de Docker Desktop, de Git LFS para recuperar el modelo final durante el clon, del fichero `backend/.env` facilitado con la entrega y de conexión a Internet durante el primer arranque.
+La forma recomendada de ejecutar el proyecto es mediante Docker Compose. De este modo, no es necesario instalar manualmente Python ni Node.js; únicamente hace falta disponer de Docker Desktop, del fichero `backend/.env` facilitado con la entrega y de conexión a Internet durante el primer arranque.
 
 ### 1. Obtener el proyecto
 
@@ -34,16 +34,12 @@ Clona el repositorio y entra en su raíz. No hay ninguna subcarpeta intermedia: 
 ```bash
 git clone https://github.com/claudiaerguido/TFG-WhySoSerious.git
 cd TFG-WhySoSerious
-git lfs install
-git lfs pull
 ```
-
-Si Git LFS no está instalado en el equipo, debe instalarse previamente para que el modelo final del backend se descargue junto con el repositorio. El comando `git lfs pull` debe ejecutarse dentro de la carpeta del repositorio clonado.
 
 A continuación, coloca el fichero `backend/.env` facilitado con la entrega de modo que la estructura quede así:
 
 ```text
-TFG-WhySoSerious/
+WhySoSerious/
 ├── backend/
 │   └── .env
 ├── frontend/
@@ -57,35 +53,33 @@ El `.env` contiene las credenciales del entorno preparado para la evaluación. P
 Desde la raíz del repositorio clonado:
 
 ```bash
-docker compose up --build
+docker compose up
 ```
 
-La primera ejecución puede tardar varios minutos, ya que Docker construye localmente las imágenes del backend y del frontend a partir de los `Dockerfile` del proyecto. El modelo NLP final queda incluido en el árbol del repositorio gracias a Git LFS, por lo que no es necesario copiar pesos manualmente. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
+La primera ejecución puede tardar varios minutos, ya que Docker construye localmente las imágenes del backend y del frontend a partir de los `Dockerfile` del proyecto. Cuando el backend muestre `Application startup complete.`, la aplicación estará lista.
 
-Si la aplicación ya ha sido construida previamente en ese equipo, puede utilizarse después `docker compose up` para arrancarla de nuevo sin reconstruir las imágenes.
-
-| Servicio | URL |
-|---|---|
-| Frontend | http://localhost:5173 |
-| Backend | http://localhost:8000 |
-| Estado del backend | http://localhost:8000/health |
-| Documentación de API | http://localhost:8000/docs |
+| Servicio              | URL                          |
+| --------------------- | ---------------------------- |
+| Frontend              | http://localhost:5173        |
+| Backend               | http://localhost:8000        |
+| Estado del backend    | http://localhost:8000/health |
+| Documentación de API | http://localhost:8000/docs   |
 
 ### 3. Iniciar sesión
 
 Abre `http://localhost:5173` y pulsa "Iniciar sesión con Microsoft". Esto redirige a la pantalla de autenticación de Microsoft, donde puede usarse la siguiente cuenta de demostración con rol de administrador (la primera vez puede pedir aceptar los permisos delegados de la aplicación; basta con aceptarlos para continuar):
 
-| Campo | Valor |
-|---|---|
-| Correo | `javier.torres.tfg@ww5dl.onmicrosoft.com` |
-| Contraseña | `123Javi!` |
+| Campo       | Valor                                       |
+| ----------- | ------------------------------------------- |
+| Correo      | `javier.torres.tfg@ww5dl.onmicrosoft.com` |
+| Contraseña | `123Javi!`                                |
 
 Si esta cuenta no permite iniciar sesión, puede emplearse esta cuenta alternativa de respaldo:
 
-| Campo | Valor |
-|---|---|
-| Correo | `ana.martinez.tfg@ww5dl.onmicrosoft.com` |
-| Contraseña | `137137137Ana` |
+| Campo       | Valor                                      |
+| ----------- | ------------------------------------------ |
+| Correo      | `ana.martinez.tfg@ww5dl.onmicrosoft.com` |
+| Contraseña | `137137137Ana`                           |
 
 ### 4. Qué revisar
 
@@ -123,6 +117,27 @@ En otra terminal:
 cd frontend
 npm install
 npm run dev
+```
+
+---
+
+## Comprobación opcional del modelo NLP
+
+Si además quieres probar el endpoint de predicción, primero instala Git LFS y descarga los ficheros del modelo dentro del repositorio:
+
+```bash
+git lfs install
+git lfs pull
+```
+
+La descarga puede tardar varios minutos, sobre todo en la primera ejecución, porque el archivo del modelo es grande.
+
+Una vez completado, puedes probar el endpoint desde la documentación de la API o con una petición manual:
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Estoy agotada y no llego a los plazos", "model": "final"}'
 ```
 
 ---
@@ -177,16 +192,27 @@ El modelo activo se carga dentro de la imagen Docker del backend desde:
 
 ### Etiquetas
 
-| Etiqueta | Descripción | Papel en el sistema |
-|---|---|---|
-| `ESTRES_ANSIEDAD` | Estrés, presión emocional o preocupación | Señal operativa |
-| `SOBRECARGA_URGENCIA` | Exceso de carga, urgencia o presión por plazos | Señal operativa |
-| `CANSANCIO_FATIGA` | Agotamiento, desgaste o falta de energía | Señal operativa |
-| `ENFADO_IRRITACION` | Frustración, tensión o conflicto | Señal operativa |
-| `NEUTRO` | Mensajes informativos sin carga emocional relevante | Fallback y línea base |
+| Etiqueta                | Descripción                                        | Papel en el sistema    |
+| ----------------------- | --------------------------------------------------- | ---------------------- |
+| `ESTRES_ANSIEDAD`     | Estrés, presión emocional o preocupación         | Señal operativa       |
+| `SOBRECARGA_URGENCIA` | Exceso de carga, urgencia o presión por plazos     | Señal operativa       |
+| `CANSANCIO_FATIGA`    | Agotamiento, desgaste o falta de energía           | Señal operativa       |
+| `ENFADO_IRRITACION`   | Frustración, tensión o conflicto                  | Señal operativa       |
+| `NEUTRO`              | Mensajes informativos sin carga emocional relevante | Fallback y línea base |
 
 La implementación aplica umbrales por etiqueta, definidos en `backend/thresholds.json`. Si ninguna señal operativa supera su umbral, el resultado se considera `NEUTRO`. No se utiliza un sistema de expresiones regulares ni patrones léxicos para rescatar etiquetas: la decisión depende de la inferencia del modelo y del filtrado por umbral.
 
+### Prueba rápida
+
+Con el backend arrancado:
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Estoy agotada y no llego a los plazos", "model": "final"}'
+```
+
+---
 
 ## Motor de riesgo
 
@@ -214,25 +240,25 @@ Esta aproximación permite que el peso de cada señal no sea completamente fijo,
 
 ### Backend
 
-| Tecnología | Uso |
-|---|---|
-| FastAPI | API REST, rutas y middleware de sesión |
-| Transformers | Carga e inferencia del modelo NLP |
-| PyTorch | Ejecución del modelo transformer |
-| APScheduler | Programación de la ingesta automática |
-| Supabase | Persistencia sobre PostgreSQL |
-| requests | Integración HTTP con Microsoft Graph |
-| python-dotenv | Lectura de variables de entorno |
+| Tecnología   | Uso                                     |
+| ------------- | --------------------------------------- |
+| FastAPI       | API REST, rutas y middleware de sesión |
+| Transformers  | Carga e inferencia del modelo NLP       |
+| PyTorch       | Ejecución del modelo transformer       |
+| APScheduler   | Programación de la ingesta automática |
+| Supabase      | Persistencia sobre PostgreSQL           |
+| requests      | Integración HTTP con Microsoft Graph   |
+| python-dotenv | Lectura de variables de entorno         |
 
 ### Frontend
 
-| Tecnología | Uso |
-|---|---|
+| Tecnología     | Uso                                 |
+| --------------- | ----------------------------------- |
 | React 19 + Vite | Aplicación SPA y build del cliente |
-| Material UI v7 | Componentes de interfaz |
-| TanStack Query | Consulta y caché de datos |
-| React Router v7 | Navegación y protección de rutas |
-| Recharts | Visualización de tendencias |
+| Material UI v7  | Componentes de interfaz             |
+| TanStack Query  | Consulta y caché de datos          |
+| React Router v7 | Navegación y protección de rutas  |
+| Recharts        | Visualización de tendencias        |
 
 ---
 
@@ -301,11 +327,11 @@ pytest backend/tests/validation/
 pytest backend/tests/legacy/
 ```
 
-| Suite | Cobertura principal |
-|---|---|
-| `unit/` | Motor de riesgo, RBAC y robustez básica |
+| Suite           | Cobertura principal                                                |
+| --------------- | ------------------------------------------------------------------ |
+| `unit/`       | Motor de riesgo, RBAC y robustez básica                           |
 | `validation/` | Riesgo por equipo/proyecto, año fiscal, privacidad y persistencia |
-| `legacy/` | Smoke test del flujo de autenticación |
+| `legacy/`     | Smoke test del flujo de autenticación                             |
 
 ---
 
@@ -322,11 +348,11 @@ python scripts/training/evaluate_goldset.py
 
 Los datasets están en la carpeta `data/`, situada en la raíz del proyecto:
 
-| Archivo | Uso |
-|---|---|
-| `teams_train_manual.csv` | Entrenamiento |
-| `teams_val_manual.csv` | Validación durante entrenamiento |
-| `teams_goldset_120.csv` | Evaluación final mantenida aparte |
+| Archivo                    | Uso                                |
+| -------------------------- | ---------------------------------- |
+| `teams_train_manual.csv` | Entrenamiento                      |
+| `teams_val_manual.csv`   | Validación durante entrenamiento  |
+| `teams_goldset_120.csv`  | Evaluación final mantenida aparte |
 
 Durante el desarrollo se descartaron etiquetas que no aportaban valor directo al riesgo psicosocial observado, como `TRISTEZA` o `POSITIVO_ALIVIO`, y se mantuvo un núcleo operativo centrado en estrés, sobrecarga, fatiga e irritación.
 
@@ -336,14 +362,14 @@ Durante el desarrollo se descartaron etiquetas que no aportaban valor directo al
 
 Evaluación sobre `teams_goldset_120.csv`:
 
-| Etiqueta | Precisión | Recall | F1-score |
-|---|---:|---:|---:|
-| `ESTRES_ANSIEDAD` | 0.789 | 0.698 | 0.800 |
-| `SOBRECARGA_URGENCIA` | 0.786 | 0.825 | 0.816 |
-| `CANSANCIO_FATIGA` | 0.632 | 0.960 | 0.773 |
-| `ENFADO_IRRITACION` | 0.812 | 0.929 | 0.815 |
-| `NEUTRO` | 0.889 | 0.816 | 0.848 |
-| Macro avg | | | 0.810 |
+| Etiqueta                | Precisión | Recall | F1-score |
+| ----------------------- | ---------: | -----: | -------: |
+| `ESTRES_ANSIEDAD`     |      0.789 |  0.698 |    0.800 |
+| `SOBRECARGA_URGENCIA` |      0.786 |  0.825 |    0.816 |
+| `CANSANCIO_FATIGA`    |      0.632 |  0.960 |    0.773 |
+| `ENFADO_IRRITACION`   |      0.812 |  0.929 |    0.815 |
+| `NEUTRO`              |      0.889 |  0.816 |    0.848 |
+| Macro avg               |            |        |    0.810 |
 
 Estas métricas deben interpretarse como una validación offline del clasificador lingüístico. La validación del impacto organizativo real queda fuera del alcance del TFG y requeriría un estudio empírico posterior.
 
@@ -351,19 +377,19 @@ Estas métricas deben interpretarse como una validación offline del clasificado
 
 ## Endpoints principales
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/health` | Estado del backend y carga del modelo |
-| `POST` | `/predict` | Prueba manual del clasificador NLP |
-| `GET` | `/api/me` | Usuario autenticado |
-| `GET` | `/login` | Inicio del flujo OAuth |
-| `GET` | `/auth/callback` | Callback OAuth |
-| `GET` | `/logout` | Cierre de sesión |
-| `GET` | `/api/my/workspaces` | Equipos y proyectos visibles |
-| `GET` | `/api/teams/risk` | Riesgo agregado por equipo |
-| `GET` | `/api/projects/risk` | Riesgo agregado por proyecto |
-| `GET` | `/api/employees/profile` | Perfil supervisado de empleado |
-| `POST` | `/api/admin/trigger-analysis` | Lanzamiento manual de la ingesta |
+| Método  | Ruta                            | Descripción                          |
+| -------- | ------------------------------- | ------------------------------------- |
+| `GET`  | `/health`                     | Estado del backend y carga del modelo |
+| `POST` | `/predict`                    | Prueba manual del clasificador NLP    |
+| `GET`  | `/api/me`                     | Usuario autenticado                   |
+| `GET`  | `/login`                      | Inicio del flujo OAuth                |
+| `GET`  | `/auth/callback`              | Callback OAuth                        |
+| `GET`  | `/logout`                     | Cierre de sesión                     |
+| `GET`  | `/api/my/workspaces`          | Equipos y proyectos visibles          |
+| `GET`  | `/api/teams/risk`             | Riesgo agregado por equipo            |
+| `GET`  | `/api/projects/risk`          | Riesgo agregado por proyecto          |
+| `GET`  | `/api/employees/profile`      | Perfil supervisado de empleado        |
+| `POST` | `/api/admin/trigger-analysis` | Lanzamiento manual de la ingesta      |
 
 Salvo `/health` y `/predict`, los endpoints requieren sesión activa. La autorización se aplica desde `permissions_service.py`, de acuerdo con el rol y el ámbito organizativo del usuario.
 
