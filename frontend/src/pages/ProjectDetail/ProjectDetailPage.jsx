@@ -99,8 +99,11 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
             <Typography
               variant="subtitle1"
               className="member-name-text"
-              sx={{ cursor: "pointer", "&:hover": { color: "#4f46e5" } }}
-              onClick={() => navigate(`/employee/${memberEmail}`)}
+              sx={type === "team"
+                ? { cursor: "pointer", "&:hover": { color: "#4f46e5" } }
+                : { cursor: "default" }
+              }
+              onClick={type === "team" ? () => navigate(`/employee/${memberEmail}`) : undefined}
             >
               {member.display_name}
             </Typography>
@@ -181,6 +184,7 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
               {displayBreakdown.map((p) => {
                 const projectRisk = p.project_risk;
+                const showProjectRisk = type !== "team";
                 const projectColor = projectRisk === null || projectRisk === undefined
                   ? "#94a3b8"
                   : projectRisk >= 35 ? "#ef4444"
@@ -191,17 +195,21 @@ function MemberRiskRow({ member, type, days, rangeMode = "preset", customRange =
                   : projectRisk >= 35 ? "rgba(239,68,68,0.07)"
                   : projectRisk >= 20 ? "rgba(245,158,11,0.07)"
                   : "rgba(34,197,94,0.07)";
+                const chipBg = showProjectRisk ? projectBg : "rgba(148,163,184,0.08)";
+                const chipBorder = showProjectRisk ? `${projectColor}30` : "rgba(148,163,184,0.26)";
 
                 return (
                   <Chip
                     key={p.project_id}
-                    label={`${p.project_name}${projectRisk !== null && projectRisk !== undefined ? ` · ${projectRisk}%` : ''}`}
+                    label={showProjectRisk && projectRisk !== null && projectRisk !== undefined
+                      ? `${p.project_name} · ${projectRisk}%`
+                      : p.project_name}
                     onDelete={canManage ? () => removeMutation.mutate(p.project_id) : undefined}
                     size="small"
                     sx={{
-                      bgcolor: projectBg,
+                      bgcolor: chipBg,
                       color: '#334155',
-                      border: `1px solid ${projectColor}30`,
+                      border: `1px solid ${chipBorder}`,
                       fontWeight: 500,
                       '& .MuiChip-deleteIcon': {
                         color: '#94a3b8',
