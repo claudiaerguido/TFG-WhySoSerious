@@ -67,19 +67,8 @@ La primera ejecución puede tardar varios minutos, ya que Docker construye local
 
 ### 3. Iniciar sesión
 
-Abre `http://localhost:5173` y pulsa "Iniciar sesión con Microsoft". Esto redirige a la pantalla de autenticación de Microsoft, donde puede usarse la siguiente cuenta de demostración con rol de administrador (la primera vez puede pedir aceptar los permisos delegados de la aplicación; basta con aceptarlos para continuar):
+Abre `http://localhost:5173` y pulsa "Iniciar sesión con Microsoft". Esto redirige a la pantalla de autenticación de Microsoft, donde puede iniciarse sesión con las credenciales de las cuentas de demostración incluidas en la memoria del TFG (Anexo V) (la primera vez puede pedir aceptar los permisos delegados de la aplicación; basta con aceptarlos para continuar).
 
-| Campo       | Valor                                       |
-| ----------- | ------------------------------------------- |
-| Correo      | `javier.torres.tfg@ww5dl.onmicrosoft.com` |
-| Contraseña | `123Javi!`                                |
-
-Si esta cuenta no permite iniciar sesión, puede emplearse esta cuenta alternativa de respaldo:
-
-| Campo       | Valor                                      |
-| ----------- | ------------------------------------------ |
-| Correo      | `ana.martinez.tfg@ww5dl.onmicrosoft.com` |
-| Contraseña | `137137137Ana`                           |
 
 ### 4. Qué revisar
 
