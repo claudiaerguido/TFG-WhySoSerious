@@ -347,22 +347,6 @@ Los datasets están en la carpeta `data/`, situada en la raíz del proyecto:
 
 Durante el desarrollo se descartaron etiquetas que no aportaban valor directo al riesgo psicosocial observado, como `TRISTEZA` o `POSITIVO_ALIVIO`, y se mantuvo un núcleo operativo centrado en estrés, sobrecarga, fatiga e irritación.
 
----
-
-## Métricas del modelo
-
-Evaluación sobre `teams_goldset_120.csv`:
-
-| Etiqueta                | Precisión | Recall | F1-score |
-| ----------------------- | ---------: | -----: | -------: |
-| `ESTRES_ANSIEDAD`     |      0.789 |  0.698 |    0.800 |
-| `SOBRECARGA_URGENCIA` |      0.786 |  0.825 |    0.816 |
-| `CANSANCIO_FATIGA`    |      0.632 |  0.960 |    0.773 |
-| `ENFADO_IRRITACION`   |      0.812 |  0.929 |    0.815 |
-| `NEUTRO`              |      0.889 |  0.816 |    0.848 |
-| Macro avg               |            |        |    0.810 |
-
-Estas métricas deben interpretarse como una validación offline del clasificador lingüístico. La validación del impacto organizativo real queda fuera del alcance del TFG y requeriría un estudio empírico posterior.
 
 ---
 
